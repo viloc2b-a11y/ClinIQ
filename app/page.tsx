@@ -16,6 +16,13 @@ export default function HomePage() {
         using the current ClinIQ engine.
       </p>
 
+      <p className="mb-6 text-sm">
+        <a className="text-primary underline underline-offset-4" href="/dashboard">
+          ClinIQ Dashboard v1
+        </a>
+        <span className="text-muted-foreground"> — document ingest (placeholder) + live AR demo</span>
+      </p>
+
       <RunDemoButton />
     </main>
   )
