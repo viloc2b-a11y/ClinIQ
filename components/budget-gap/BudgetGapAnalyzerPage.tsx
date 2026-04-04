@@ -80,13 +80,18 @@ function statusBadgeVariant(
 ): "danger" | "warning" | "success" | "destructive" {
   switch (status) {
     case "loss":
+    case "undervalued":
       return "danger"
     case "breakeven":
       return "warning"
     case "profitable":
+    case "present":
       return "success"
     case "missing":
       return "destructive"
+    case "internal_only":
+    case "pricing_rule_only":
+      return "warning"
     default:
       return "warning"
   }

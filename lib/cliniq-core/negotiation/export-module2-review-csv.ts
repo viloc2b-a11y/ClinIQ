@@ -1,10 +1,13 @@
 /**
- * Module 2 — operational CSV export: one row per fee decision from `IngestSponsorOfferResult.review.feeDecisions`.
+ * Module 2 — operational CSV: one row per fee decision, derived from the canonical JSON document.
  */
 
 import { writeFileSync } from "node:fs"
 
-import type { IngestSponsorOfferResult } from "./ingest-sponsor-offer"
+import {
+  readModule2NegotiationReviewJsonDocument,
+  type Module2NegotiationReviewJsonDocument,
+} from "./export-module2-review-json"
 
 function csvEscapeCell(value: string): string {
   if (/[",\n\r]/.test(value)) {
@@ -15,7 +18,6 @@ function csvEscapeCell(value: string): string {
 
 const CSV_HEADERS = [
   "fee_family",
-  "label",
   "sponsor_offer",
   "floor_price",
   "target_price",
@@ -28,14 +30,15 @@ const CSV_HEADERS = [
 ] as const
 
 /**
- * RFC 4180-style single sheet; derived only from `result.review.feeDecisions`.
+ * RFC 4180-style sheet; rows come only from `doc.review.feeDecisions` on the canonical JSON shape.
  */
-export function module2FeeDecisionsToCsv(result: IngestSponsorOfferResult): string {
+export function module2FeeDecisionsToCsv(
+  doc: Module2NegotiationReviewJsonDocument,
+): string {
   const headerRow = CSV_HEADERS.join(",")
-  const dataRows = result.review.feeDecisions.map((d) =>
+  const dataRows = doc.review.feeDecisions.map((d) =>
     [
       d.fee_family,
-      d.label,
       d.sponsor_offer === null ? "" : String(d.sponsor_offer),
       String(d.floor_price),
       String(d.target_price),
@@ -52,11 +55,13 @@ export function module2FeeDecisionsToCsv(result: IngestSponsorOfferResult): stri
   return [headerRow, ...dataRows].join("\n")
 }
 
-export function writeModule2NegotiationReviewCsv(
-  filePath: string,
-  result: IngestSponsorOfferResult,
+/** Write CSV by reading the canonical JSON file (single source of truth on disk). */
+export function writeModule2NegotiationReviewCsvFromJsonFile(
+  csvFilePath: string,
+  jsonFilePath: string,
 ): void {
-  writeFileSync(filePath, module2FeeDecisionsToCsv(result), "utf8")
+  const doc = readModule2NegotiationReviewJsonDocument(jsonFilePath)
+  writeFileSync(csvFilePath, module2FeeDecisionsToCsv(doc), "utf8")
 }
 
 export type Module2ReviewCsvColumn = (typeof CSV_HEADERS)[number]

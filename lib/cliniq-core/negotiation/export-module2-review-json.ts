@@ -2,7 +2,7 @@
  * Module 2 — canonical JSON export for `IngestSponsorOfferResult` (audit / product hand-off).
  */
 
-import { writeFileSync } from "node:fs"
+import { readFileSync, writeFileSync } from "node:fs"
 
 import type { IngestSponsorOfferResult } from "./ingest-sponsor-offer"
 
@@ -35,10 +35,28 @@ export function serializeModule2NegotiationReviewJson(
   )
 }
 
+export function writeModule2NegotiationReviewJsonDocument(
+  filePath: string,
+  doc: Module2NegotiationReviewJsonDocument,
+): void {
+  writeFileSync(filePath, JSON.stringify(doc, null, 2), "utf8")
+}
+
 export function writeModule2NegotiationReviewJson(
   filePath: string,
   result: IngestSponsorOfferResult,
   options?: { exportedAt?: string },
 ): void {
-  writeFileSync(filePath, serializeModule2NegotiationReviewJson(result, options), "utf8")
+  writeModule2NegotiationReviewJsonDocument(
+    filePath,
+    buildModule2NegotiationReviewJsonDocument(result, options),
+  )
+}
+
+/** Read canonical JSON from disk (e.g. to derive CSV from the same bytes as written). */
+export function readModule2NegotiationReviewJsonDocument(
+  filePath: string,
+): Module2NegotiationReviewJsonDocument {
+  const text = readFileSync(filePath, "utf8")
+  return JSON.parse(text) as Module2NegotiationReviewJsonDocument
 }

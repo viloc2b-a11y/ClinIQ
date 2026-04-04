@@ -241,4 +241,98 @@ describe("compareSponsorBudgetToInternalBudget", () => {
     expect(summary.totalGapPerPatient).toBe(-20)
     expect(summary.projectedStudyGap).toBe(-500)
   })
+
+  describe("siteNegotiationVariables policy layer", () => {
+    it("required_match_keys + no sponsor → missing and missingInvoiceable", () => {
+      const internalLines = [
+        line({
+          id: "i1",
+          category: "Visit",
+          label: "Custom line",
+          internalTotal: 500,
+          internalUnitCost: 500,
+        }),
+      ]
+      const key = budgetLineMatchKey(internalLines[0]!)
+      const { gapLines, missingInvoiceables } = compareSponsorBudgetToInternalBudget({
+        internalLines,
+        sponsorLines: [],
+        studyMeta: meta,
+        siteNegotiationVariables: { required_match_keys: [key] },
+      })
+      expect(gapLines[0]?.status).toBe("missing")
+      expect(missingInvoiceables).toHaveLength(1)
+    })
+
+    it("internal_only_keys + no sponsor → internal_only and no missingInvoiceable", () => {
+      const internalLines = [
+        line({
+          id: "i1",
+          category: "Visit",
+          label: "Internal only activity",
+          internalTotal: 200,
+          internalUnitCost: 200,
+        }),
+      ]
+      const key = budgetLineMatchKey(internalLines[0]!)
+      const { gapLines, missingInvoiceables } = compareSponsorBudgetToInternalBudget({
+        internalLines,
+        sponsorLines: [],
+        studyMeta: meta,
+        siteNegotiationVariables: { internal_only_keys: [key] },
+      })
+      expect(gapLines[0]?.status).toBe("internal_only")
+      expect(missingInvoiceables).toHaveLength(0)
+    })
+
+    it("ignore_unmatched_sponsor_keys → pricing_rule_only gap line and no unmatched alert", () => {
+      const internalLines = [line({ id: "i1", label: "Alpha", internalTotal: 100 })]
+      const sponsorLines = [
+        sponsor({ id: "s1", label: "orphan sponsor line", sponsorTotalOffer: 50 }),
+      ]
+      const orphanKey = budgetLineMatchKey(sponsorLines[0]!)
+      const { gapLines, summary } = compareSponsorBudgetToInternalBudget({
+        internalLines,
+        sponsorLines,
+        studyMeta: meta,
+        siteNegotiationVariables: {
+          ignore_unmatched_sponsor_keys: [orphanKey],
+        },
+      })
+      const pr = gapLines.find((g) => g.status === "pricing_rule_only")
+      expect(pr).toBeDefined()
+      expect(pr?.sponsorTotalOffer).toBe(50)
+      expect(
+        summary.primaryAlerts.filter((a) =>
+          /did not match any internal budget row/i.test(a),
+        ),
+      ).toEqual([])
+    })
+
+    it("min_acceptable_margin_percent tightens present vs undervalued", () => {
+      const internalLines = [line({ id: "i1", internalTotal: 100 })]
+      const sponsorLines = [sponsor({ id: "s1", sponsorTotalOffer: 111 })]
+      const { gapLines } = compareSponsorBudgetToInternalBudget({
+        internalLines,
+        sponsorLines,
+        studyMeta: meta,
+        siteNegotiationVariables: { min_acceptable_margin_percent: 15 },
+      })
+      expect(gapLines[0]?.status).toBe("undervalued")
+    })
+
+    it("appends coordinator_notes to summary.primaryAlerts", () => {
+      const internalLines = [line({ id: "i1", internalTotal: 100 })]
+      const sponsorLines = [sponsor({ id: "s1", sponsorTotalOffer: 100 })]
+      const { summary } = compareSponsorBudgetToInternalBudget({
+        internalLines,
+        sponsorLines,
+        studyMeta: meta,
+        siteNegotiationVariables: { coordinator_notes: ["Pharmacy central fill"] },
+      })
+      expect(summary.primaryAlerts.some((a) => a.includes("Coordinator: Pharmacy central fill"))).toBe(
+        true,
+      )
+    })
+  })
 })

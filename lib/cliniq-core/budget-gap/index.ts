@@ -34,6 +34,20 @@ export {
 export { buildBudgetGapAnalysisExport, gapLinesToCsv } from "./export-format"
 export type { BudgetGapAnalysisExport } from "./export-format"
 export {
+  BUDGET_GAP_ANALYSIS_JSON_SCHEMA_VERSION,
+  buildBudgetGapAnalysisJsonDocument,
+  readBudgetGapAnalysisJsonDocument,
+  serializeBudgetGapAnalysisJson,
+  writeBudgetGapAnalysisJson,
+  writeBudgetGapAnalysisJsonDocument,
+} from "./export-budget-gap-json"
+export type { BudgetGapAnalysisJsonDocument } from "./export-budget-gap-json"
+export {
+  budgetGapAnalysisToCsv,
+  writeBudgetGapAnalysisCsvFromJsonFile,
+} from "./export-budget-gap-csv"
+export type { BudgetGapAnalysisCsvColumn } from "./export-budget-gap-csv"
+export {
   CRITICAL_INVOICEABLE_CATEGORY_PATTERNS,
   isCriticalInvoiceableCategory,
 } from "./critical-invoiceables"
@@ -64,5 +78,6 @@ export type {
   GapStatus,
   InternalBudgetLine,
   MissingInvoiceable,
+  SiteNegotiationVariables,
   SponsorBudgetLine,
 } from "./types"

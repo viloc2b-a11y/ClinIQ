@@ -23,6 +23,7 @@ export type {
   NegotiationScenarioResult,
   NegotiationStrategyBucket,
   NegotiationTarget,
+  SiteNegotiationVariables,
   SponsorBudgetLine,
 } from "@/lib/cliniq-core/budget-gap"
 export type {

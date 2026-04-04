@@ -45,7 +45,7 @@ export function recommendCounterofferForLine(
     }
   }
 
-  if (line.status === "loss") {
+  if (line.status === "loss" || line.status === "undervalued") {
     const absGap = Math.abs(gapAmount)
     let recommended: number
     if (strategy === "conservative") {
@@ -137,7 +137,7 @@ export function selectLinesForStrategy(
   summary: BudgetGapSummary,
 ): NegotiationEngineGapLine[] {
   const sortedLoss = lines
-    .filter((l) => l.status === "loss")
+    .filter((l) => l.status === "loss" || l.status === "undervalued")
     .slice()
     .sort((a, b) => a.gapAmount - b.gapAmount)
 
@@ -177,8 +177,12 @@ function sortSelectedLines(
   const statusRank: Record<string, number> = {
     missing: 0,
     loss: 1,
+    undervalued: 1,
     breakeven: 2,
     profitable: 3,
+    present: 3,
+    internal_only: 4,
+    pricing_rule_only: 4,
   }
   return lines.slice().sort((a, b) => {
     const ra = statusRank[a.status] ?? 9

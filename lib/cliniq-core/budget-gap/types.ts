@@ -4,7 +4,29 @@ export type BudgetLineSource =
   | "merged"
   | "derived"
 
-export type GapStatus = "loss" | "breakeven" | "profitable" | "missing"
+export type GapStatus =
+  | "loss"
+  | "breakeven"
+  | "profitable"
+  | "missing"
+  | "internal_only"
+  | "undervalued"
+  | "present"
+  | "pricing_rule_only"
+
+/** Site coordinator policy for compare classification (optional; undefined = legacy loss/breakeven/profitable/missing). */
+export type SiteNegotiationVariables = {
+  /** Match keys (`budgetLineMatchKey`) that must have a sponsor row or status is `missing`. */
+  required_match_keys?: string[]
+  /** Match keys where no sponsor row is expected → `internal_only`. */
+  internal_only_keys?: string[]
+  /** Unmatched sponsor keys treated as `pricing_rule_only` (no primary alert). */
+  ignore_unmatched_sponsor_keys?: string[]
+  /** Minimum margin percent (e.g. 10 = 10%) for `present` vs `undervalued` when sponsor matched. */
+  min_acceptable_margin_percent?: number
+  /** Appended to summary alerts and line notes. */
+  coordinator_notes?: string[]
+}
 
 export type InternalBudgetLine = {
   id: string
@@ -95,6 +117,7 @@ export type CompareBudgetInput = {
   internalLines: InternalBudgetLine[]
   sponsorLines: SponsorBudgetLine[]
   studyMeta: BudgetStudyMeta
+  siteNegotiationVariables?: SiteNegotiationVariables
 }
 
 export type CompareBudgetResult = {

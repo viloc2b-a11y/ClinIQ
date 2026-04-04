@@ -62,7 +62,9 @@ export type NegotiationEngineInput = {
 }
 
 function negotiationPriorityForStatus(status: GapStatus): NegotiationPriority {
-  if (status === "missing" || status === "loss") return "high"
+  if (status === "missing" || status === "loss" || status === "undervalued") {
+    return "high"
+  }
   if (status === "breakeven") return "medium"
   return "low"
 }
@@ -95,7 +97,7 @@ export function buildTopNegotiationTargets(
   }))
 
   const losses = result.gapLines
-    .filter((l) => l.status === "loss")
+    .filter((l) => l.status === "loss" || l.status === "undervalued")
     .slice()
     .sort((a, b) => a.gapAmount - b.gapAmount)
     .slice(0, 5)
@@ -141,7 +143,9 @@ export function buildJustificationPoints(
     )
   }
 
-  const lossCount = result.gapLines.filter((l) => l.status === "loss").length
+  const lossCount = result.gapLines.filter(
+    (l) => l.status === "loss" || l.status === "undervalued",
+  ).length
   if (lossCount > 0) {
     points.push(
       `${lossCount} activity line(s) are underwater versus true staffing, coordinator/PI oversight, and visit execution time.`,
