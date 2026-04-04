@@ -10,7 +10,7 @@ export type { NegotiationZone }
 
 /** Aligns with site cost model: `burden_level === "high"` when score > 4. */
 const SAE_BURDEN_HIGH_THRESHOLD = 4
-const GROSS_MARGIN_DEFENDABLE_BELOW = 0.12
+const CASH_ADJUSTED_MARGIN_DEFENDABLE_BELOW = 0.12
 const RISK_SCORE_DEFENDABLE_AT_LEAST = 70
 
 /**
@@ -31,7 +31,7 @@ export function classifyFee(fee: NegotiationFeeInput): NegotiationZone {
 
   if (
     belowTarget ||
-    fee.gross_margin < GROSS_MARGIN_DEFENDABLE_BELOW ||
+    fee.cash_adjusted_margin < CASH_ADJUSTED_MARGIN_DEFENDABLE_BELOW ||
     fee.risk_score >= RISK_SCORE_DEFENDABLE_AT_LEAST
   ) {
     return "defendable"
