@@ -1,11 +1,7 @@
 """
 Revenue leakage detection.
-
 A billable is "leaked" if it remains in "pending" status past the point
-where its visit should have been triggered.  The caller decides when to
-run detection (end-of-day sweep, study closure, on-demand API call).
-
-Future extension: add a due_date field to ExpectedBillable and filter by it.
+where its visit should have been triggered.
 """
 
 from __future__ import annotations
@@ -17,22 +13,6 @@ from soa.models import ExpectedBillable
 def detect_revenue_leakage(
     billables: list[ExpectedBillable],
 ) -> list[ExpectedBillable]:
-    """
-    Scan billables for items still in "pending" status.
-
-    Emits one revenue_leakage_flagged event per leaked item, plus a
-    summary event so dashboards can react without coupling to this function.
-
-    Args:
-        billables: Full billables list for the study.
-
-    Returns:
-        Subset of billables flagged as leaked.
-
-    Emits:
-        revenue_leakage_flagged    — one per pending billable.
-        revenue_leakage_summary    — aggregate, only if leaks exist.
-    """
     leaked: list[ExpectedBillable] = []
 
     for b in billables:
@@ -58,6 +38,7 @@ def detect_revenue_leakage(
         emit_event(
             "revenue_leakage_summary",
             {
+                "study_id": leaked[0].study_id,
                 "total_leaked_items": len(leaked),
                 "total_leaked_value": float(sum(b.amount for b in leaked)),
             },

@@ -1,15 +1,14 @@
 """
 ClinIQ — SoA Engine Example Run
-
 Pipeline:
-  1. Parse SoA CSV  → ExpectedBillable list
-  2. Screening Visit completed  → trigger matching billables
-  3. Baseline Visit completed   → trigger matching billables
-  4. Leakage detection          → flag remaining pending items
+  1. Parse SoA CSV  -> ExpectedBillable list
+  2. Screening Visit completed  -> trigger matching billables
+  3. Baseline Visit completed   -> trigger matching billables
+  4. Leakage detection          -> flag remaining pending items
   5. Print full event log
 
-Run from the backend/ directory:
-    python example_run.py
+Run from the repo root:
+    python .\cliniq-engine\example_run.py
 """
 
 from __future__ import annotations
@@ -27,9 +26,9 @@ from soa import parse_soa_to_expected_billables
 
 
 def _section(title: str) -> None:
-    print(f"\n{'─' * 60}")
+    print("\n" + "-" * 60)
     print(f"  {title}")
-    print("─" * 60)
+    print("-" * 60)
 
 
 def main() -> None:
@@ -37,29 +36,31 @@ def main() -> None:
 
     csv_path = Path(__file__).parent / "mock_soa.csv"
 
-    # ── 1. Parse SoA ─────────────────────────────────────────────
+    # 1. Parse SoA
     _section("1. Parse SoA CSV")
     billables = parse_soa_to_expected_billables(csv_path)
     total = sum(b.amount for b in billables)
     print(f"  {len(billables)} billables loaded   |   total value: ${total:,.2f}\n")
     for b in billables:
-        print(f"  [{b.status:8}]  {b.visit_name:<22}  {b.activity_id:<10}  ${b.amount:>8.2f}  → {b.billable_to}")
+        print(
+            f"  [{b.status:8}]  {b.visit_name:<22}  {b.activity_id:<10}  ${b.amount:>8.2f}  -> {b.billable_to}"
+        )
 
-    # ── 2. Screening Visit ────────────────────────────────────────
+    # 2. Screening Visit
     _section("2. Visit Completed: Screening Visit")
     triggered = handle_visit_completed("Screening Visit", billables)
     print(f"  {len(triggered)} billable(s) triggered")
     for b in triggered:
-        print(f"  ✓  {b.activity_id}  ${b.amount:.2f}  [{b.status}]")
+        print(f"  OK  {b.activity_id}  ${b.amount:.2f}  [{b.status}]")
 
-    # ── 3. Baseline Visit ─────────────────────────────────────────
+    # 3. Baseline Visit
     _section("3. Visit Completed: Baseline Visit")
     triggered = handle_visit_completed("Baseline Visit", billables)
     print(f"  {len(triggered)} billable(s) triggered")
     for b in triggered:
-        print(f"  ✓  {b.activity_id}  ${b.amount:.2f}  [{b.status}]")
+        print(f"  OK  {b.activity_id}  ${b.amount:.2f}  [{b.status}]")
 
-    # ── 4. Leakage Detection ──────────────────────────────────────
+    # 4. Leakage Detection
     _section("4. Revenue Leakage Detection")
     leaked = detect_revenue_leakage(billables)
     leaked_value = sum(b.amount for b in leaked)
@@ -67,8 +68,8 @@ def main() -> None:
     for b in leaked:
         print(f"  !!  {b.visit_name:<22}  {b.activity_id:<10}  ${b.amount:.2f}")
 
-    # ── 5. Event Log ──────────────────────────────────────────────
-    _section(f"5. Event Store  ({len(event_store)} events)")
+    # 5. Event Log
+    _section(f"5. Event Store ({len(event_store)} events)")
     for e in event_store:
         ts = e.created_at.strftime("%H:%M:%S.%f")
         payload_lines = json.dumps(e.payload, indent=6).splitlines()

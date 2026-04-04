@@ -1,6 +1,5 @@
 """
 Visit execution handler.
-
 Bridges real-world visit completion → expected billables plan.
 Each matched pending billable: pending → triggered + event emitted.
 """
@@ -17,24 +16,23 @@ def handle_visit_completed(
 ) -> list[ExpectedBillable]:
     """
     Process a completed visit against the expected billables list.
-
     Mutates status in-place (acceptable with in-memory store).
     Supabase migration: replace the mutation with an UPDATE call.
-
-    Args:
-        visit_name:  Name of the visit that was completed.
-        billables:   Full billables list for the study.
-
-    Returns:
-        Subset of billables triggered by this visit.
-
-    Emits:
-        billable_instance_created  — one per matched pending billable.
     """
     triggered: list[ExpectedBillable] = []
 
+    emit_event(
+        "visit_completed",
+        {
+            "study_id": billables[0].study_id if billables else None,
+            "visit_name": visit_name,
+        },
+    )
+
+    normalized_input = visit_name.strip().lower()
+
     for b in billables:
-        if b.visit_name.strip().lower() != visit_name.strip().lower():
+        if b.normalized_visit() != normalized_input:
             continue
         if b.status != "pending":
             continue
