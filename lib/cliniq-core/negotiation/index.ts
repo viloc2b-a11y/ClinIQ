@@ -75,6 +75,15 @@ export type {
 } from "./negotiation-types"
 
 // --- Module 4 (budget gap) ---
+export { buildModule4Artifacts } from "./build-module4-artifacts"
+export type {
+  BuildModule4ArtifactsParams,
+  ExternalNegotiationPackage,
+  ExternalNegotiationSummary,
+  InternalNegotiationPlan,
+  Module4Artifacts,
+  SponsorNegotiationHooks,
+} from "./module4-types"
 export {
   negotiationEngineInputFromGapResult,
   negotiationPackageFromGapResult,
