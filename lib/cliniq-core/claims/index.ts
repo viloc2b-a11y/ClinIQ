@@ -3,6 +3,8 @@
  */
 export {
   buildAgingReport,
+  buildClaimItemsCanonical,
+  buildClaimItemsFromExecutionLines,
   buildClaimItemsFromLedger,
   buildClaimPackage,
   buildInvoiceLinesFromClaimItems,
@@ -15,6 +17,7 @@ export {
   claimItemsToCsv,
   invoicePackageToJson,
 } from "./export-format"
+export type { BuildClaimItemsCanonicalInput } from "./build-claims"
 export type {
   AgingEntry,
   BuildAgingReportInput,

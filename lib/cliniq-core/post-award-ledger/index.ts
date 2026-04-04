@@ -6,6 +6,22 @@ export { generateExpectedBillablesFromBudget } from "./expected-billables"
 export type { GenerateExpectedParams } from "./expected-billables"
 export { buildLedger } from "./ledger"
 export { detectRevenueLeakage } from "./leakage"
+export {
+  buildExecutionLineFromClaimsLedgerRow,
+  buildExecutionLinesFromClaimsLedger,
+} from "./execution-line-builder"
+export {
+  BLOCKING_CODES,
+  isExecutionLineBlocked,
+} from "./execution-lines"
+export type {
+  ApprovalStatus,
+  BlockingCode,
+  DisputeStatus,
+  EvidenceStatus,
+  ExecutionBillableLine,
+  ExecutionStatus,
+} from "./execution-lines"
 export type {
   BillableInstance,
   EventLog,

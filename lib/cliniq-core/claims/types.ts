@@ -3,6 +3,8 @@
  * Operational ledger rows are row-level (traceable); distinct from Module 5 aggregated ledger.
  */
 
+import type { ExecutionBillableLine } from "../post-award-ledger/execution-lines"
+
 export type InvoiceStatus =
   | "ready"
   | "invoiced"
@@ -16,13 +18,22 @@ export type InvoiceStatus =
  */
 export type ClaimsLedgerRow = {
   studyId: string
+  siteId?: string
   sponsorId?: string
   subjectId?: string
   visitName?: string
+  /** Protocol / SoA activity reference when known */
+  activityId?: string
   /** ISO 8601 date (date part used for aging) */
   eventDate: string
   lineCode: string
+  /** Fee template code when distinct from budget lineCode */
+  feeCode?: string
   label: string
+  /** Billable units for this row when known (Module 5 execution bridge) */
+  quantity?: number
+  /** Explicit unit price when known */
+  unitPrice?: number
   amount: number
   supportNote?: string
   /** Site / finance approval */
@@ -130,7 +141,15 @@ export type AgingEntry = {
 }
 
 export type BuildInvoicePackageInput = {
-  claimItems: ClaimItem[]
+  /**
+   * When provided and non-empty, used as-is (highest precedence).
+   * Otherwise `buildInvoicePackage` derives via `buildClaimItemsCanonical`.
+   */
+  claimItems?: ClaimItem[]
+  /** Primary derived input when `claimItems` is absent or empty. */
+  executionLines?: ExecutionBillableLine[]
+  /** Converted through `buildExecutionLinesFromClaimsLedger` then execution-line claims mapping. */
+  ledgerRows?: ClaimsLedgerRow[]
   /** Defaults to now */
   generatedAt?: string
 }
