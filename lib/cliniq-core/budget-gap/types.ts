@@ -1,3 +1,5 @@
+import type { Procedure } from "../cost-truth/cost-types"
+
 export type BudgetLineSource =
   | "internal-model"
   | "sponsor-budget"
@@ -40,6 +42,11 @@ export type InternalBudgetLine = {
   internalTotal: number
   notes: string
   source: BudgetLineSource
+  /**
+   * When set alongside `roleCosts` + `siteCostProfile` in `generateExpectedBillablesFromBudget`,
+   * enables Cost Truth pricing (procedure time × role rates + overhead + margin).
+   */
+  costTruthProcedure?: Procedure
 }
 
 export type SponsorBudgetLine = {

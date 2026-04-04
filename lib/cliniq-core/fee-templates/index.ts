@@ -34,6 +34,29 @@ export {
   type KnownTriggerType,
   type KnownTriggerSource,
 } from "./fee-taxonomy"
+export {
+  CLINICAL_COST_SCREENING_DIABETES_EXAMPLE,
+  clinicalRoleCostsToRoleCosts,
+  clinicalSiteContextToSiteCostProfile,
+  type ClinicalCostScenarioPayload,
+  type ClinicalFeeReferenceSlice,
+  type ClinicalProcedureContext,
+  type ClinicalRoleCostsRecord,
+  type ClinicalSiteCostContext,
+} from "./clinical-cost-payload"
+export {
+  feeTemplate,
+  findSiteFeeByCode,
+  recommendedFeePriceWithComplexity,
+  siteFeeTemplateTyped,
+} from "./site-fee-template.lookup"
+export type {
+  SiteFeeTemplateDocument,
+  SiteFeeTemplateEngine,
+  SiteFeeTemplateFee,
+  SiteFeePricing,
+  SiteFeeTherapeuticAreaKey,
+} from "./site-fee-template-types"
 export type {
   BillableInstanceRow,
   BillableInstanceStatus,

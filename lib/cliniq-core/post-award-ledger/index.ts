@@ -1,6 +1,10 @@
 /**
  * Module 5 — post-award ledger (execution → billables → variance / leakage).
  */
+export {
+  buildLedgerRowsFromBillables,
+  type BillableToLedgerOptions,
+} from "./billable-to-ledger"
 export { generateBillablesFromEvent } from "./billables-from-events"
 export { generateExpectedBillablesFromBudget } from "./expected-billables"
 export type { GenerateExpectedParams } from "./expected-billables"
