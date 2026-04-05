@@ -2,6 +2,11 @@
  * Claims / invoice output layer (post Module 5).
  */
 export {
+  buildClaimItemsFromRecords,
+  type BuildClaimItemsFromRecordsInput,
+  type ClaimItemsFromRecordsResult,
+} from "./build-claim-items-from-records"
+export {
   buildAgingReport,
   buildClaimItemsCanonical,
   buildClaimItemsFromExecutionLines,

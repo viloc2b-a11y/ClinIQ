@@ -18,3 +18,9 @@ export { buildReviewActionsFromLeakageSignals } from "./matching/build-review-ac
 export { runRevenueProtectionReview } from "./matching/run-revenue-protection-review"
 
 export { demoExpectedRows, demoInvoiceRows } from "./matching/fixtures/revenue-protection-demo"
+
+export * from "./run-document-ingestion-v2"
+export * from "./excel-hardening"
+export * from "./bridges"
+export * from "./canonical-runner"
+export * from "./demo-payload"
