@@ -27,6 +27,7 @@ supabase/.temp/
 .DS_Store
 *.pem
 cost_truth_dump.txt
+.cursor/
 
 # debug
 npm-debug.log*

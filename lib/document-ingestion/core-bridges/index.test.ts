@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest"
 
 import {
+  buildInitialExpectedBillables,
+  classifyCoreSoaActivities,
   runCoreBridgePackage,
+  runCorePayloadPackage,
+  toCoreBudgetReviewPayload,
   toCoreBudgetReviewRows,
+  toCoreInvoiceReviewPayload,
   toCoreInvoiceReviewRows,
   toCoreSoaImportRows,
+  toCoreSoaIntakePayload,
+  toCoreSoaStructuredInput,
 } from "./index"
 
 describe("core-bridges index exports", () => {
@@ -13,6 +20,13 @@ describe("core-bridges index exports", () => {
     expect(typeof toCoreBudgetReviewRows).toBe("function")
     expect(typeof toCoreInvoiceReviewRows).toBe("function")
     expect(typeof runCoreBridgePackage).toBe("function")
+    expect(typeof toCoreSoaIntakePayload).toBe("function")
+    expect(typeof toCoreBudgetReviewPayload).toBe("function")
+    expect(typeof toCoreInvoiceReviewPayload).toBe("function")
+    expect(typeof runCorePayloadPackage).toBe("function")
+    expect(typeof toCoreSoaStructuredInput).toBe("function")
+    expect(typeof classifyCoreSoaActivities).toBe("function")
+    expect(typeof buildInitialExpectedBillables).toBe("function")
   })
 
   it("importing from index runs package orchestrator with mixed mock input", async () => {
