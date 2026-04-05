@@ -5,6 +5,23 @@ import type { ActionCenterPersistenceAdapter } from "./persistence-adapter"
 import type { ActionItemRow } from "./persistence-types"
 import type { ActionCenterItem } from "./types"
 
+/**
+ * Stable, adapter-level error `message` values. No silent recovery and **no fallback to memory** here —
+ * use `getActionCenterPersistenceMode()` / env to stay on memory when Supabase is unavailable.
+ */
+export const SUPABASE_ADAPTER_ERROR = {
+  missingSupabaseEnv: "missing_supabase_env",
+  failedToListActionItems: "failed_to_list_action_items",
+  failedToUpsertActionItems: "failed_to_upsert_action_items",
+  actionItemNotFound: "action_item_not_found",
+  failedToUpdateActionItemStatus: "failed_to_update_action_item_status",
+  failedToAppendActionItemEvent: "failed_to_append_action_item_event",
+} as const
+
+function throwAdapterError(message: (typeof SUPABASE_ADAPTER_ERROR)[keyof typeof SUPABASE_ADAPTER_ERROR]): never {
+  throw new Error(message)
+}
+
 function toNumber(value: unknown): number {
   if (typeof value === "number" && !Number.isNaN(value)) return value
   if (typeof value === "string" && value.trim() !== "") return Number(value)
@@ -74,11 +91,11 @@ function compareActionItemsForList(a: ActionCenterItem, b: ActionCenterItem): nu
 }
 
 function createSupabaseAdminClient(): SupabaseClient {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? ""
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? ""
 
-  if (!url || !key) {
-    throw new Error("missing_supabase_env")
+  if (url === "" || key === "") {
+    throwAdapterError(SUPABASE_ADAPTER_ERROR.missingSupabaseEnv)
   }
 
   return createClient(url, key, {
@@ -104,7 +121,7 @@ export class SupabasePersistenceAdapter implements ActionCenterPersistenceAdapte
       .order("created_at", { ascending: false })
 
     if (error) {
-      throw new Error("failed_to_list_action_items")
+      throwAdapterError(SUPABASE_ADAPTER_ERROR.failedToListActionItems)
     }
 
     const rows = (data ?? []) as Record<string, unknown>[]
@@ -120,7 +137,7 @@ export class SupabasePersistenceAdapter implements ActionCenterPersistenceAdapte
       onConflict: "id",
     })
     if (error) {
-      throw new Error("failed_to_upsert_action_items")
+      throwAdapterError(SUPABASE_ADAPTER_ERROR.failedToUpsertActionItems)
     }
   }
 
@@ -171,7 +188,7 @@ export class SupabasePersistenceAdapter implements ActionCenterPersistenceAdapte
     }
     const { error } = await this.client.from("cliniq_action_item_events").insert(row)
     if (error) {
-      throw new Error("failed_to_append_action_item_event")
+      throwAdapterError(SUPABASE_ADAPTER_ERROR.failedToAppendActionItemEvent)
     }
   }
 }

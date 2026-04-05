@@ -3,6 +3,7 @@ import { getActionCenterFromPersistence } from "@/lib/cliniq-core/action-center/
 
 export async function GET() {
   await bootstrapMemoryActionCenter()
+
   const result = await getActionCenterFromPersistence()
 
   if (!result.ok) {

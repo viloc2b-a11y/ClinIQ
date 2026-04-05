@@ -1,3 +1,8 @@
+/**
+ * STEP 4 — Mutations via {@link getActionCenterPersistenceAdapter}: list → validate → next status →
+ * `updateActionItemStatus` + `appendActionItemEvent` (on change) → list again → summary.
+ * Supported: `mark_in_progress`, `mark_resolved` only. JSON contract: {@link ActionCenterMutationApiResponse}.
+ */
 import type {
   ActionCenterMutationApiResponse,
   ActionCenterMutationRequest,

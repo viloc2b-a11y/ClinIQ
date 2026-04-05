@@ -1,7 +1,8 @@
-import {
-  type ActionCenterIngestSyncResult,
-  syncActionCenterFromIngestPipeline,
+import type {
+  ActionCenterIngestSyncResult,
 } from "../action-center/sync-action-center-from-ingest"
+import { isVisitCompletedEventType } from "../action-center/sync-action-center-from-ingest"
+import { runActionCenterSyncFromRuntime } from "../action-center/run-action-center-sync-from-runtime"
 import { buildClaimItemsFromLedger, buildInvoicePackage } from "../claims/build-claims"
 import type { ClaimItem, ClaimsLedgerRow, InvoicePackage } from "../claims/types"
 import { generateBillablesFromEvent } from "../post-award-ledger/billables-from-events"
@@ -10,9 +11,19 @@ import type { QuantifiedRevenueLeakageReport } from "../post-award-ledger/quanti
 import { quantifyRevenueLeakage } from "../post-award-ledger/quantify-leakage"
 import type { BillableInstance, EventLog, ExpectedBillable } from "../post-award-ledger/types"
 
-export type { ActionCenterIngestSyncResult, ActionCenterSyncMetadata } from "../action-center/sync-action-center-from-ingest"
+export type {
+  ActionCenterIngestSyncResult,
+  ActionCenterSyncCounts,
+  ActionCenterSyncMetadata,
+} from "../action-center/sync-action-center-from-ingest"
 
-/** Result of a successful `ingestEvent` (Supabase row shape is driver-specific). */
+/**
+ * Resolved value when `ingestEvent` completes (Supabase `event` row shape is driver-specific).
+ *
+ * **v1 — Action Center is non-atomic with core ingest:** sync runs in the same call after financial
+ * outputs exist. `actionCenterSync.ok === false` means write-through failed but core artifacts were
+ * still produced; callers should treat it as a warning, not rollback. Omitted when event type skips sync.
+ */
 export type IngestEventResult = {
   event: Record<string, unknown>
   billables: BillableInstance[]
@@ -20,7 +31,7 @@ export type IngestEventResult = {
   claimItems: ClaimItem[]
   invoice: InvoicePackage
   leakage: QuantifiedRevenueLeakageReport
-  /** Present for `visit_completed` after sync runs; success includes count metadata. */
+  /** `visit_completed` only: `{ ok: true, counts }` or `{ ok: false, error }` (warning, not thrown). */
   actionCenterSync?: ActionCenterIngestSyncResult
 }
 
@@ -76,18 +87,18 @@ function emptyInvoicePackage(
 /**
  * Event/visit ingestion: persists `event_log`, runs billables → ledger → claims → invoice → leakage.
  *
- * **Contract (v1):** Action Center write-through is **additive**. If the DB insert and core pipeline
- * succeed, this function resolves with the same return shape as before, plus optional `actionCenterSync`.
- * When `actionCenterSync` is present and `ok: false`, the event row and financial artifacts were still
- * produced; clients should treat that as a sync warning, not a failed ingest. Core failures (e.g. insert)
- * still throw unchanged.
+ * **Contract (v1, preserved):**
+ * - **Core failure** (DB insert or earlier pipeline error) → throws; no Action Center side effects after throw.
+ * - **Core success** → same return fields as before ingest existed, plus optional `actionCenterSync`.
+ * - **Action Center sync failure** (after core success) → does **not** throw; `actionCenterSync: { ok: false, error }`.
+ *   Memory / Supabase persistence adapters are unchanged; routes keep default memory fallback unless env says otherwise.
  */
 export async function ingestEvent(params: {
   supabase: any
   event: IngestEventInput
   expectedBillables: ExpectedBillable[]
   sponsorId?: string
-}) {
+}): Promise<IngestEventResult> {
   const { supabase, event, expectedBillables } = params
   const sponsorId = params.sponsorId ?? DEFAULT_SPONSOR_ID
 
@@ -141,14 +152,27 @@ export async function ingestEvent(params: {
   const packagesForLeakage =
     invoicePackages.length > 0 ? invoicePackages : [invoice]
 
-  /** `visit_completed` → {@link runActionCenterSyncFromRuntime} via syncActionCenterFromIngestPipeline. */
-  const actionCenterSync = await syncActionCenterFromIngestPipeline({
-    eventType: event.eventType,
-    expectedBillables,
-    ledgerRows,
-    claimItems,
-    invoicePackages: packagesForLeakage,
-  })
+  /** After financial outputs exist: `visit_completed` → {@link runActionCenterSyncFromRuntime} → write-through. */
+  let actionCenterSync: ActionCenterIngestSyncResult | undefined
+  if (isVisitCompletedEventType(event.eventType)) {
+    try {
+      const r = await runActionCenterSyncFromRuntime({
+        expectedBillables,
+        ...(ledgerRows.length > 0 ? { ledgerRows } : {}),
+        ...(claimItems.length > 0 ? { claimItems } : {}),
+        ...(packagesForLeakage.length > 0 ? { invoicePackages: packagesForLeakage } : {}),
+      })
+      actionCenterSync = {
+        ok: true,
+        insertedCount: r.insertedCount,
+        updatedCount: r.updatedCount,
+        unchangedCount: r.unchangedCount,
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      actionCenterSync = { ok: false, error: message }
+    }
+  }
 
   return {
     event: inserted as Record<string, unknown>,

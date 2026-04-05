@@ -1,6 +1,9 @@
-import type { ActionCenterWriteThroughInput } from "./write-through-types"
 import { writeThroughActionCenter } from "./write-through-action-center"
 
+/**
+ * Delegates to {@link writeThroughActionCenter}; **rejects/throws** on write-through failure.
+ * Callers that need a non-atomic ingest (v1) catch and surface metadata — see `ingestEvent`.
+ */
 export async function runActionCenterSyncFromRuntime(params: {
   expectedBillables: any[]
   ledgerRows?: any[]
@@ -12,5 +15,5 @@ export async function runActionCenterSyncFromRuntime(params: {
     ledgerRows: params.ledgerRows,
     claimItems: params.claimItems,
     invoicePackages: params.invoicePackages,
-  } as ActionCenterWriteThroughInput)
+  })
 }

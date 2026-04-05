@@ -69,7 +69,8 @@ export async function POST(req: Request) {
       },
       expectedBillables: b.expectedBillables as ExpectedBillable[],
     })
-    // v1: top-level ok: true when ingest resolves; Action Center issues are in result.actionCenterSync?.ok
+    // v1 contract: HTTP 200 + { ok: true, ...ingest } when ingest resolves. Core failure → catch below (500).
+    // Action Center sync failure is non-fatal: result.actionCenterSync?.ok === false (warning metadata).
     return Response.json({ ok: true, ...result })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)

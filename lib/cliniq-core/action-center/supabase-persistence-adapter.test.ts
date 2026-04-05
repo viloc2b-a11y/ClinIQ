@@ -72,7 +72,7 @@ function mockClientForList(rows: Record<string, unknown>[], listError: { message
   return { from, select, order }
 }
 
-describe("SupabasePersistenceAdapter", () => {
+describe("SupabasePersistenceAdapter (STEP 8, mocked client)", () => {
   beforeEach(() => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://example.supabase.co")
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "service-role-key")
@@ -120,7 +120,7 @@ describe("SupabasePersistenceAdapter", () => {
     expect(items.map((i) => i.id)).toEqual(["b-high", "a-high", "m-medium", "z-low"])
   })
 
-  it("upsertActionItems maps and sends rows correctly", async () => {
+  it("upsertActionItems sends correct rows", async () => {
     const upsert = vi.fn().mockResolvedValue({ error: null })
     const from = vi.fn().mockImplementation((table: string) => {
       if (table === "cliniq_action_items") return { upsert }
@@ -147,7 +147,7 @@ describe("SupabasePersistenceAdapter", () => {
     expect(typeof records[0].updated_at).toBe("string")
   })
 
-  it("updateActionItemStatus sets resolved timestamp when status is resolved", async () => {
+  it("updateActionItemStatus sets resolved_at correctly when status is resolved", async () => {
     let capturedPatch: Record<string, unknown> | undefined
     const select = vi.fn().mockResolvedValue({ data: [{ id: "x" }], error: null })
     const eq = vi.fn().mockReturnValue({ select })
@@ -215,9 +215,16 @@ describe("SupabasePersistenceAdapter", () => {
     })
   })
 
-  it("missing env vars throws missing_supabase_env", () => {
+  it("missing env throws missing_supabase_env", () => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "")
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "")
+
+    expect(() => createSupabasePersistenceAdapter()).toThrow("missing_supabase_env")
+  })
+
+  it("whitespace-only env vars throw missing_supabase_env", () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "   ")
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "\t")
 
     expect(() => createSupabasePersistenceAdapter()).toThrow("missing_supabase_env")
   })

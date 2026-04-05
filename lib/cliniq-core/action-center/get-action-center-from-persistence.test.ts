@@ -9,11 +9,17 @@ import {
 } from "./get-persistence-adapter"
 import { resetMemoryPersistenceAdapterState } from "./memory-persistence-adapter"
 
+const hoisted = vi.hoisted(() => ({
+  actualGet: () =>
+    null as unknown as ReturnType<typeof getActionCenterPersistenceAdapter>,
+}))
+
 vi.mock("./get-persistence-adapter", async (importOriginal) => {
   const mod = await importOriginal<typeof import("./get-persistence-adapter")>()
+  hoisted.actualGet = () => mod.getActionCenterPersistenceAdapter()
   return {
     ...mod,
-    getActionCenterPersistenceAdapter: vi.fn(),
+    getActionCenterPersistenceAdapter: vi.fn(() => hoisted.actualGet()),
   }
 })
 
@@ -41,14 +47,29 @@ function item(overrides: Partial<ActionCenterItem> = {}): ActionCenterItem {
   }
 }
 
-describe("getActionCenterFromPersistence", () => {
+describe("getActionCenterFromPersistence (STEP 8)", () => {
   beforeEach(() => {
     resetMemoryPersistenceAdapterState()
     resetActionCenterPersistenceAdapterCache()
     mockedGetAdapter.mockReset()
+    mockedGetAdapter.mockImplementation(() => hoisted.actualGet())
   })
 
-  it("returns ok true with items from adapter", async () => {
+  it("returns ok true from memory adapter", async () => {
+    const adapter = hoisted.actualGet()
+    await adapter.upsertActionItems([item({ id: "mem-1" })])
+
+    const result = await getActionCenterFromPersistence()
+
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.data.items).toHaveLength(1)
+      expect(result.data.items[0]?.id).toBe("mem-1")
+      expect(result.data.summary).toEqual(recomputeActionCenterSummary(result.data.items))
+    }
+  })
+
+  it("returns ok true with mocked adapter list", async () => {
     const items = [item({ id: "a" }), item({ id: "b", missingAmount: 50 })]
     mockedGetAdapter.mockReturnValue({
       listActionItems: vi.fn().mockResolvedValue(items),
@@ -62,21 +83,7 @@ describe("getActionCenterFromPersistence", () => {
     }
   })
 
-  it("recomputes summary correctly", async () => {
-    const items = [item({ id: "a", priority: "high", missingAmount: 10 })]
-    mockedGetAdapter.mockReturnValue({
-      listActionItems: vi.fn().mockResolvedValue(items),
-    } as never)
-
-    const result = await getActionCenterFromPersistence()
-
-    expect(result.ok).toBe(true)
-    if (result.ok) {
-      expect(result.data.summary).toEqual(recomputeActionCenterSummary(items))
-    }
-  })
-
-  it("returns failure shape on adapter error", async () => {
+  it("returns failure shape when adapter throws", async () => {
     mockedGetAdapter.mockReturnValue({
       listActionItems: vi.fn().mockRejectedValue(new Error("db")),
     } as never)

@@ -1,3 +1,6 @@
+/**
+ * STEP 6 — Thin wrapper tests (mocked write-through; no Supabase).
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ExpectedBillable } from "../post-award-ledger/types"

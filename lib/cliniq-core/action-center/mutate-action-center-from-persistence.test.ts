@@ -9,11 +9,17 @@ import {
 } from "./get-persistence-adapter"
 import { resetMemoryPersistenceAdapterState } from "./memory-persistence-adapter"
 
+const hoisted = vi.hoisted(() => ({
+  actualGet: () =>
+    null as unknown as ReturnType<typeof getActionCenterPersistenceAdapter>,
+}))
+
 vi.mock("./get-persistence-adapter", async (importOriginal) => {
   const mod = await importOriginal<typeof import("./get-persistence-adapter")>()
+  hoisted.actualGet = () => mod.getActionCenterPersistenceAdapter()
   return {
     ...mod,
-    getActionCenterPersistenceAdapter: vi.fn(),
+    getActionCenterPersistenceAdapter: vi.fn(() => hoisted.actualGet()),
   }
 })
 
@@ -56,14 +62,15 @@ function setupAdapterSequence(states: ActionCenterItem[][]) {
   return { listActionItems, updateActionItemStatus, appendActionItemEvent }
 }
 
-describe("mutateActionCenterFromPersistence", () => {
+describe("mutateActionCenterFromPersistence (STEP 8)", () => {
   beforeEach(() => {
     resetMemoryPersistenceAdapterState()
     resetActionCenterPersistenceAdapterCache()
     mockedGetAdapter.mockReset()
+    mockedGetAdapter.mockImplementation(() => hoisted.actualGet())
   })
 
-  it("invalid request", async () => {
+  it("invalid request returns invalid_request", async () => {
     expect(await mutateActionCenterFromPersistence({} as never)).toEqual({
       ok: false,
       error: "invalid_request",
@@ -80,13 +87,13 @@ describe("mutateActionCenterFromPersistence", () => {
     })
   })
 
-  it("unsupported action", async () => {
+  it("unsupported action returns unsupported_action", async () => {
     const out = await mutateActionCenterFromPersistence({ itemId: "x", action: "view_details" })
     expect(out).toEqual({ ok: false, error: "unsupported_action" })
     expect(mockedGetAdapter).not.toHaveBeenCalled()
   })
 
-  it("item not found", async () => {
+  it("item_not_found returns item_not_found", async () => {
     setupAdapterSequence([[]])
     const out = await mutateActionCenterFromPersistence({
       itemId: "missing",
@@ -95,7 +102,39 @@ describe("mutateActionCenterFromPersistence", () => {
     expect(out).toEqual({ ok: false, error: "item_not_found" })
   })
 
-  it("mark_in_progress updates status through adapter", async () => {
+  it("mark_in_progress works in memory mode", async () => {
+    const adapter = hoisted.actualGet()
+    await adapter.upsertActionItems([makeItem({ id: "mem-ip", status: "open" })])
+
+    const out = await mutateActionCenterFromPersistence({
+      itemId: "mem-ip",
+      action: "mark_in_progress",
+    })
+
+    expect(out.ok).toBe(true)
+    if (out.ok) {
+      expect(out.data.result.items.find((i) => i.id === "mem-ip")?.status).toBe("in_progress")
+      expect(out.data.result.summary).toEqual(recomputeActionCenterSummary(out.data.result.items))
+    }
+  })
+
+  it("mark_resolved works in memory mode", async () => {
+    const adapter = hoisted.actualGet()
+    await adapter.upsertActionItems([makeItem({ id: "mem-rs", status: "open" })])
+
+    const out = await mutateActionCenterFromPersistence({
+      itemId: "mem-rs",
+      action: "mark_resolved",
+    })
+
+    expect(out.ok).toBe(true)
+    if (out.ok) {
+      expect(out.data.result.items.find((i) => i.id === "mem-rs")?.status).toBe("resolved")
+      expect(out.data.result.summary).toEqual(recomputeActionCenterSummary(out.data.result.items))
+    }
+  })
+
+  it("mark_in_progress updates status through mocked adapter", async () => {
     const open = makeItem({ id: "x", status: "open" })
     const after = [makeItem({ id: "x", status: "in_progress" })]
     const { listActionItems, updateActionItemStatus } = setupAdapterSequence([[open], after])
@@ -116,7 +155,7 @@ describe("mutateActionCenterFromPersistence", () => {
     }
   })
 
-  it("mark_resolved updates status through adapter", async () => {
+  it("mark_resolved updates status through mocked adapter", async () => {
     const open = makeItem({ id: "x", status: "open" })
     const after = [makeItem({ id: "x", status: "resolved" })]
     const { updateActionItemStatus } = setupAdapterSequence([[open], after])
@@ -151,7 +190,7 @@ describe("mutateActionCenterFromPersistence", () => {
     })
   })
 
-  it("summary recomputed from latest adapter state", async () => {
+  it("summary updates after mutation", async () => {
     const open = makeItem({ id: "x", status: "open" })
     const after = [makeItem({ id: "x", status: "resolved", missingAmount: 999 })]
     setupAdapterSequence([[open], after])

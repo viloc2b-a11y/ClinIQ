@@ -6,24 +6,30 @@ export function isVisitCompletedEventType(eventType: string): boolean {
   return eventType.trim().toLowerCase() === "visit_completed"
 }
 
-/** Counts returned on successful Action Center write-through (additive ingest metadata). */
+/**
+ * Count metadata on successful write-through (STEP 5 optional result shape).
+ * Present on `ingestEvent` as `actionCenterSync` together with `ok: true`.
+ */
 export type ActionCenterSyncMetadata = {
   insertedCount: number
   updatedCount: number
   unchangedCount: number
 }
 
+/** Alias for callers that only care about the count triple after a successful sync. */
+export type ActionCenterSyncCounts = ActionCenterSyncMetadata
+
+/** Discriminated result for ingest/API: `ok: false` is a **warning** when core ingest already succeeded (v1). */
 export type ActionCenterIngestSyncResult =
   | ({ ok: true } & ActionCenterSyncMetadata)
   | { ok: false; error: string }
 
 /**
- * **v1 failure policy:** Never throws. Surfaces write-through errors as `{ ok: false, error }` so the
- * caller’s main ingest path can still return success with `actionCenterSync` as diagnostic metadata.
+ * **v1 failure policy (same semantics as the `ingestEvent` Action Center block):** never throws.
+ * Write-through errors become `{ ok: false, error }` so callers keep a successful core ingest shape.
  *
- * After visit ingestion produces ledger/claims/invoice slices, refresh persisted Action Center
- * via {@link runActionCenterSyncFromRuntime} (leakage → build → merge → upsert). Omitted optional
- * inputs are left unset so write-through uses its existing defaults.
+ * Optional helper when not inlining {@link runActionCenterSyncFromRuntime}; ingest uses try/catch
+ * around that function directly with identical behavior.
  */
 export async function syncActionCenterFromIngestPipeline(params: {
   eventType: string

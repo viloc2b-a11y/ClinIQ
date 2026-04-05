@@ -1,16 +1,21 @@
+/**
+ * v1 contract (STEP 4): core `event_log` failure → `ingestEvent` throws. Action Center sync failure →
+ * `ingestEvent` still resolves with `actionCenterSync: { ok: false, error }`. Non-visit events → no sync.
+ *
+ * STEP 6: nested describe exercises Action Center hook via mocked `runActionCenterSyncFromRuntime` (no Supabase).
+ */
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const hoisted = vi.hoisted(() => ({
-  syncPipeline: vi.fn(),
+  runActionCenterSyncFromRuntime: vi.fn(),
 }))
 
-vi.mock("../action-center/sync-action-center-from-ingest", () => ({
-  isVisitCompletedEventType: (eventType: string) =>
-    eventType.trim().toLowerCase() === "visit_completed",
-  syncActionCenterFromIngestPipeline: hoisted.syncPipeline,
+vi.mock("../action-center/run-action-center-sync-from-runtime", () => ({
+  runActionCenterSyncFromRuntime: hoisted.runActionCenterSyncFromRuntime,
 }))
 
 import { buildInvoicePackage } from "../claims/build-claims"
+import { runActionCenterSyncFromRuntime } from "../action-center/run-action-center-sync-from-runtime"
 import { ingestEvent, resolveLineCodeForIngest } from "./ingest-event"
 import type { ExpectedBillable } from "../post-award-ledger/types"
 
@@ -108,14 +113,20 @@ describe("resolveLineCodeForIngest", () => {
   })
 })
 
+const mockedRunActionCenterSync = vi.mocked(runActionCenterSyncFromRuntime)
+
 describe("ingestEvent", () => {
   beforeEach(() => {
-    hoisted.syncPipeline.mockImplementation(async (params: { eventType: string }) => {
-      if (params.eventType.trim().toLowerCase() !== "visit_completed") return undefined
-      return { ok: true, insertedCount: 0, updatedCount: 0, unchangedCount: 0 }
+    hoisted.runActionCenterSyncFromRuntime.mockReset()
+    hoisted.runActionCenterSyncFromRuntime.mockResolvedValue({
+      items: [],
+      insertedCount: 0,
+      updatedCount: 0,
+      unchangedCount: 0,
     })
   })
 
+  describe("STEP 6: Action Center sync hook (mocked runActionCenterSyncFromRuntime, no Supabase)", () => {
   it("runs pipeline: insert, billables, ledger, claims, invoice, leakage", async () => {
     const supabase = mockSupabaseInsert({
       study_id: "S-1",
@@ -151,11 +162,12 @@ describe("ingestEvent", () => {
     expect(out.invoice.lineCount).toBeGreaterThan(0)
     expect(out.leakage.totalExpected).toBeGreaterThanOrEqual(0)
     expect(supabase.from).toHaveBeenCalledWith("event_log")
-    expect(hoisted.syncPipeline).toHaveBeenCalledTimes(1)
-    expect(hoisted.syncPipeline).toHaveBeenCalledWith(
+    expect(mockedRunActionCenterSync).toHaveBeenCalledTimes(1)
+    expect(mockedRunActionCenterSync).toHaveBeenCalledWith(
       expect.objectContaining({
-        eventType: "visit_completed",
         expectedBillables: expectedForVisit1,
+        ledgerRows: out.ledgerRows,
+        claimItems: out.claimItems,
       }),
     )
     expect(out.actionCenterSync).toEqual({
@@ -181,9 +193,9 @@ describe("ingestEvent", () => {
     })
 
     let syncArgs: unknown
-    hoisted.syncPipeline.mockImplementation(async (p) => {
+    hoisted.runActionCenterSyncFromRuntime.mockImplementation(async (p) => {
       syncArgs = p
-      return { ok: true, insertedCount: 0, updatedCount: 0, unchangedCount: 0 }
+      return { items: [], insertedCount: 0, updatedCount: 0, unchangedCount: 0 }
     })
 
     const out = await ingestEvent({
@@ -218,8 +230,43 @@ describe("ingestEvent", () => {
     ).toEqual(expectedPackages.map(omitGeneratedAt))
   })
 
+  it("omits ledgerRows and claimItems from sync payload when pipeline produced none; still exactly one sync call", async () => {
+    hoisted.runActionCenterSyncFromRuntime.mockClear()
+    const supabase = mockSupabaseInsert({
+      study_id: "S-1",
+      subject_id: "SUB-001",
+      visit_name: "Other",
+      event_type: "visit_completed",
+      event_date: "2026-04-04T10:00:00.000Z",
+    })
+
+    const twoMismatched: ExpectedBillable[] = [
+      { ...expectedForVisit1[0], id: "eb-a", lineCode: "A", visitName: "V-A" },
+      { ...expectedForVisit1[0], id: "eb-b", lineCode: "B", visitName: "V-B" },
+    ]
+
+    await ingestEvent({
+      supabase,
+      event: {
+        studyId: "S-1",
+        subjectId: "SUB-001",
+        visitName: "Other",
+        eventType: "visit_completed",
+        eventDate: "2026-04-04T10:00:00.000Z",
+      },
+      expectedBillables: twoMismatched,
+    })
+
+    expect(mockedRunActionCenterSync).toHaveBeenCalledTimes(1)
+    const arg = mockedRunActionCenterSync.mock.calls[0]![0] as Record<string, unknown>
+    expect(arg.expectedBillables).toBe(twoMismatched)
+    expect(arg.ledgerRows).toBeUndefined()
+    expect(arg.claimItems).toBeUndefined()
+    expect(Array.isArray(arg.invoicePackages)).toBe(true)
+  })
+
   it("one visit_completed ingest invokes Action Center sync exactly once", async () => {
-    hoisted.syncPipeline.mockClear()
+    hoisted.runActionCenterSyncFromRuntime.mockClear()
     const supabase = mockSupabaseInsert({
       study_id: "S-1",
       subject_id: "SUB-001",
@@ -240,15 +287,14 @@ describe("ingestEvent", () => {
       expectedBillables: expectedForVisit1,
     })
 
-    expect(hoisted.syncPipeline).toHaveBeenCalledTimes(1)
+    expect(mockedRunActionCenterSync).toHaveBeenCalledTimes(1)
   })
 
   it("v1: Action Center sync failure is additive — ingest still succeeds with actionCenterSync ok false", async () => {
-    hoisted.syncPipeline.mockClear()
-    hoisted.syncPipeline.mockImplementation(async () => ({
-      ok: false,
-      error: "failed_to_write_through_action_center",
-    }))
+    hoisted.runActionCenterSyncFromRuntime.mockClear()
+    hoisted.runActionCenterSyncFromRuntime.mockRejectedValue(
+      new Error("failed_to_write_through_action_center"),
+    )
 
     const supabase = mockSupabaseInsert({
       study_id: "S-1",
@@ -276,11 +322,11 @@ describe("ingestEvent", () => {
       ok: false,
       error: "failed_to_write_through_action_center",
     })
-    expect(hoisted.syncPipeline).toHaveBeenCalledTimes(1)
+    expect(mockedRunActionCenterSync).toHaveBeenCalledTimes(1)
   })
 
   it("does not sync action center for non-visit_completed event types", async () => {
-    hoisted.syncPipeline.mockClear()
+    hoisted.runActionCenterSyncFromRuntime.mockClear()
     const supabase = mockSupabaseInsert({
       study_id: "S-1",
       subject_id: "SUB-001",
@@ -301,12 +347,14 @@ describe("ingestEvent", () => {
       expectedBillables: expectedForVisit1,
     })
 
-    expect(hoisted.syncPipeline).toHaveBeenCalledTimes(1)
+    expect(mockedRunActionCenterSync).not.toHaveBeenCalled()
     expect(out.actionCenterSync).toBeUndefined()
   })
 
+  }) // STEP 6 describe
+
   it("throws when insert fails", async () => {
-    hoisted.syncPipeline.mockClear()
+    hoisted.runActionCenterSyncFromRuntime.mockClear()
     const supabase = {
       from: vi.fn(() => ({
         insert: vi.fn(() => ({
@@ -333,6 +381,6 @@ describe("ingestEvent", () => {
         expectedBillables: expectedForVisit1,
       }),
     ).rejects.toThrow("Failed to insert event_log")
-    expect(hoisted.syncPipeline).not.toHaveBeenCalled()
+    expect(mockedRunActionCenterSync).not.toHaveBeenCalled()
   })
 })

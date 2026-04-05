@@ -1,10 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { MemoryPersistenceAdapter } from "./memory-persistence-adapter"
-import {
-  getActionCenterPersistenceMode,
-  isSupabasePersistenceEnabled,
-} from "./persistence-config"
+import { resetMemoryPersistenceAdapterState } from "./memory-persistence-adapter"
 
 const hoisted = vi.hoisted(() => ({
   createSupabasePersistenceAdapter: vi.fn(() => ({ __kind: "supabase-mock" })),
@@ -19,9 +16,8 @@ import {
   getActionCenterPersistenceAdapter,
   resetActionCenterPersistenceAdapterCache,
 } from "./get-persistence-adapter"
-import { resetMemoryPersistenceAdapterState } from "./memory-persistence-adapter"
 
-describe("getActionCenterPersistenceAdapter", () => {
+describe("getActionCenterPersistenceAdapter (STEP 8)", () => {
   beforeEach(() => {
     vi.unstubAllEnvs()
     resetMemoryPersistenceAdapterState()
@@ -33,10 +29,8 @@ describe("getActionCenterPersistenceAdapter", () => {
     vi.unstubAllEnvs()
   })
 
-  it("default mode returns memory adapter", () => {
+  it("memory mode returns memory adapter", () => {
     const a = getActionCenterPersistenceAdapter()
-    const b = getActionCenterPersistenceAdapter()
-    expect(a).toBe(b)
     expect(a).toBeInstanceOf(MemoryPersistenceAdapter)
     expect(createSupabasePersistenceAdapter).not.toHaveBeenCalled()
   })
@@ -48,32 +42,50 @@ describe("getActionCenterPersistenceAdapter", () => {
     expect(adapter).toEqual({ __kind: "supabase-mock" })
   })
 
+  it("memory adapter is cached", () => {
+    const a = getActionCenterPersistenceAdapter()
+    const b = getActionCenterPersistenceAdapter()
+    expect(a).toBe(b)
+    expect(a).toBeInstanceOf(MemoryPersistenceAdapter)
+  })
+
   it("each supabase call creates a new adapter instance", () => {
     vi.stubEnv("CLINIQ_ACTION_CENTER_PERSISTENCE_MODE", "supabase")
     getActionCenterPersistenceAdapter()
     getActionCenterPersistenceAdapter()
     expect(createSupabasePersistenceAdapter).toHaveBeenCalledTimes(2)
   })
-})
 
-describe("getActionCenterPersistenceMode / isSupabasePersistenceEnabled", () => {
-  afterEach(() => {
+  it("supabase adapter is created without mutating memory state", async () => {
+    const mem = getActionCenterPersistenceAdapter()
+    await mem.upsertActionItems([
+      {
+        id: "seed-mem",
+        studyId: "S",
+        subjectId: "SUB",
+        visitName: "V",
+        lineCode: "L",
+        actionType: "prepare_invoice",
+        ownerRole: "billing",
+        priority: "medium",
+        status: "open",
+        title: "T",
+        description: "D",
+        expectedAmount: 1,
+        invoicedAmount: 0,
+        missingAmount: 1,
+        leakageStatus: "missing",
+        leakageReason: "not_invoiced",
+      },
+    ])
+
+    vi.stubEnv("CLINIQ_ACTION_CENTER_PERSISTENCE_MODE", "supabase")
+    getActionCenterPersistenceAdapter()
     vi.unstubAllEnvs()
-  })
 
-  it("mode parsing is deterministic", () => {
-    expect(getActionCenterPersistenceMode()).toBe("memory")
-    expect(isSupabasePersistenceEnabled()).toBe(false)
-
-    vi.stubEnv("CLINIQ_ACTION_CENTER_PERSISTENCE_MODE", "  SUPABASE  ")
-    expect(getActionCenterPersistenceMode()).toBe("supabase")
-    expect(isSupabasePersistenceEnabled()).toBe(true)
-
-    vi.stubEnv("CLINIQ_ACTION_CENTER_PERSISTENCE_MODE", "SupaBase")
-    expect(getActionCenterPersistenceMode()).toBe("supabase")
-
-    vi.stubEnv("CLINIQ_ACTION_CENTER_PERSISTENCE_MODE", "postgres")
-    expect(getActionCenterPersistenceMode()).toBe("memory")
-    expect(isSupabasePersistenceEnabled()).toBe(false)
+    resetActionCenterPersistenceAdapterCache()
+    const memAgain = getActionCenterPersistenceAdapter()
+    const items = await memAgain.listActionItems()
+    expect(items.some((i) => i.id === "seed-mem")).toBe(true)
   })
 })

@@ -1,3 +1,7 @@
+/**
+ * STEP 5 — Seed in-memory Action Center once from the mock financial pipeline.
+ * When `CLINIQ_ACTION_CENTER_PERSISTENCE_MODE=supabase`, this is a **no-op** (real data lives in DB).
+ */
 import {
   bootstrapActionCenterFromMockPipeline,
   resetBootstrapActionCenterFromMockPipeline,
@@ -17,10 +21,6 @@ export async function bootstrapMemoryActionCenter(): Promise<void> {
     return
   }
 
-  try {
-    await bootstrapActionCenterFromMockPipeline()
-  } catch {
-    throw new Error("failed_to_bootstrap_memory_action_center")
-  }
+  await bootstrapActionCenterFromMockPipeline()
   bootstrapped = true
 }

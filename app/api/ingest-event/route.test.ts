@@ -1,3 +1,7 @@
+/**
+ * HTTP v1: `POST` returns 200 + `{ ok: true, ...result }` when `ingestEvent` resolves.
+ * Sync warning: `actionCenterSync.ok === false` still 200. Core throw from `ingestEvent` → 500 + `{ ok: false }`.
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const ingestEventMock = vi.hoisted(() => vi.fn())
@@ -7,7 +11,7 @@ vi.mock("@/lib/cliniq-core/events/ingest-event", () => ({
 }))
 
 vi.mock("@supabase/supabase-js", () => ({
-  createClient: vi.fn(() => ({})),
+  createClient: vi.fn(() => ({})),
 }))
 
 import { POST } from "./route"
@@ -111,6 +115,23 @@ describe("POST /api/ingest-event", () => {
       ok: false,
       error: "failed_to_write_through_action_center",
     })
+  })
+
+  it("returns 500 when core ingest throws (atomic failure for event_log + pipeline)", async () => {
+    ingestEventMock.mockRejectedValue(new Error("Failed to insert event_log: rls"))
+
+    const res = await POST(
+      new Request("http://localhost/api/ingest-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(postBody()),
+      }),
+    )
+
+    expect(res.status).toBe(500)
+    const json = (await res.json()) as Record<string, unknown>
+    expect(json.ok).toBe(false)
+    expect(String(json.error)).toContain("Failed to insert event_log")
   })
 
   it("omits actionCenterSync key in JSON when ingest returns undefined (non-visit path)", async () => {

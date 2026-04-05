@@ -1,3 +1,10 @@
+/**
+ * STEP 7 — Default persistence mode is **memory** (`CLINIQ_ACTION_CENTER_PERSISTENCE_MODE` unset or not `supabase`).
+ *
+ * Validates: bootstrap seeds the shared store → `GET /api/action-center` reads the same persistence →
+ * one real `ingestEvent` (`visit_completed`) runs `runActionCenterSyncFromRuntime` / write-through →
+ * persisted item set changes (new ids). Supabase persistence adapter must not be used here.
+ */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 const hoisted = vi.hoisted(() => ({
@@ -98,6 +105,7 @@ describe("memory mode + runtime ingest integration", () => {
   })
 
   it("bootstrap seeds persistence; ingest visit_completed refreshes store; GET reads merged items", async () => {
+    // 1) Initial state: bootstrap mock pipeline into memory; adapter is MemoryPersistenceAdapter
     await bootstrapMemoryActionCenter()
 
     const adapter = getActionCenterPersistenceAdapter()
@@ -111,6 +119,7 @@ describe("memory mode + runtime ingest integration", () => {
     const beforeIds = new Set(seeded.data.items.map((i) => i.id))
     const beforeOpen = seeded.data.summary.totalOpen
 
+    // 2) Process one visit_completed (Supabase insert mocked only; sync runs for real)
     const studyId = "S-MEM-INTEGRATION"
     const supabase = mockSupabaseInsert({
       study_id: studyId,
@@ -150,6 +159,7 @@ describe("memory mode + runtime ingest integration", () => {
 
     const afterIds = afterCore.data.items.map((i) => i.id)
     const newIds = afterIds.filter((id) => !beforeIds.has(id))
+    // 4) Confirm new or merged items (not_generated path for Visit 2 expected row)
     expect(newIds.length).toBeGreaterThan(0)
 
     expect(afterCore.data.summary.totalOpen).toBeGreaterThanOrEqual(beforeOpen)
