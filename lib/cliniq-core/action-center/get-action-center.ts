@@ -5,6 +5,7 @@ import type { ActionCenterApiResponse } from "./api-types"
 
 /**
  * Mock pipeline: fixture → leakage trace → action center (sync, no I/O).
+ * Kept for fixtures, regression checks, and dev tooling alongside persistence paths — do not remove yet.
  */
 export function getActionCenter(): ActionCenterApiResponse {
   try {

@@ -1,10 +1,13 @@
-import { getMockServerActionCenterState } from "@/lib/cliniq-core/action-center"
+import { bootstrapMemoryActionCenter } from "@/lib/cliniq-core/action-center/bootstrap-memory-action-center"
+import { getActionCenterFromPersistence } from "@/lib/cliniq-core/action-center/get-action-center-from-persistence"
 
 export async function GET() {
-  try {
-    const data = getMockServerActionCenterState()
-    return Response.json({ ok: true, data }, { status: 200 })
-  } catch {
-    return Response.json({ ok: false, error: "failed_to_build_action_center" }, { status: 500 })
+  await bootstrapMemoryActionCenter()
+  const result = await getActionCenterFromPersistence()
+
+  if (!result.ok) {
+    return Response.json(result, { status: 500 })
   }
+
+  return Response.json(result, { status: 200 })
 }

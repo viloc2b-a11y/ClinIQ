@@ -1,6 +1,7 @@
 /**
  * Deterministic mock input for Action Center / leakage trace until persistence exists.
  * Wired for `buildLeakageTrace` — do not mutate at runtime.
+ * Kept for fixtures, regression checks, and dev tooling — do not remove yet.
  */
 
 import type { ClaimItem, ClaimsLedgerRow, InvoiceLine, InvoicePackage } from "../claims/types"

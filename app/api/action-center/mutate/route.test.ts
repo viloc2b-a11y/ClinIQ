@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it } from "vitest"
 
-import {
-  getMockServerActionCenterState,
-  resetMockServerActionCenterState,
-} from "@/lib/cliniq-core/action-center/mock-server-state"
+import { resetMemoryActionCenterBootstrap } from "@/lib/cliniq-core/action-center/bootstrap-memory-action-center"
+import { getActionCenter } from "@/lib/cliniq-core/action-center/get-action-center"
+import { resetMemoryPersistenceAdapterState } from "@/lib/cliniq-core/action-center/memory-persistence-adapter"
+import { resetMockServerActionCenterState } from "@/lib/cliniq-core/action-center/mock-server-state"
 
 import { POST } from "./route"
+
+function firstFixtureItemId(): string {
+  const r = getActionCenter()
+  expect(r.ok).toBe(true)
+  if (!r.ok) throw new Error("fixture_unavailable")
+  return r.data.items[0]!.id
+}
 
 function postJson(body: unknown) {
   return POST(
@@ -20,10 +27,12 @@ function postJson(body: unknown) {
 describe("POST /api/action-center/mutate", () => {
   beforeEach(() => {
     resetMockServerActionCenterState()
+    resetMemoryPersistenceAdapterState()
+    resetMemoryActionCenterBootstrap()
   })
 
   it("returns 200 for mark_in_progress", async () => {
-    const itemId = getMockServerActionCenterState().items[0]!.id
+    const itemId = firstFixtureItemId()
     const res = await postJson({ itemId, action: "mark_in_progress" })
 
     expect(res.status).toBe(200)
@@ -39,7 +48,7 @@ describe("POST /api/action-center/mutate", () => {
   })
 
   it("returns 200 for mark_resolved", async () => {
-    const itemId = getMockServerActionCenterState().items[0]!.id
+    const itemId = firstFixtureItemId()
     const res = await postJson({ itemId, action: "mark_resolved" })
 
     expect(res.status).toBe(200)
@@ -52,7 +61,7 @@ describe("POST /api/action-center/mutate", () => {
   })
 
   it("returns 400 with unsupported_action for unsupported actions", async () => {
-    const itemId = getMockServerActionCenterState().items[0]!.id
+    const itemId = firstFixtureItemId()
     const res = await postJson({ itemId, action: "view_details" })
     expect(res.status).toBe(400)
     expect(await res.json()).toEqual({ ok: false, error: "unsupported_action" })
@@ -74,7 +83,7 @@ describe("POST /api/action-center/mutate", () => {
   })
 
   it("returns stable response shape", async () => {
-    const itemId = getMockServerActionCenterState().items[0]!.id
+    const itemId = firstFixtureItemId()
     const okRes = await postJson({ itemId, action: "mark_resolved" })
     expect(okRes.status).toBe(200)
     const okJson = (await okRes.json()) as Record<string, unknown>

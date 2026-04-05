@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest"
 
+import { resetMemoryActionCenterBootstrap } from "@/lib/cliniq-core/action-center/bootstrap-memory-action-center"
+import { resetMemoryPersistenceAdapterState } from "@/lib/cliniq-core/action-center/memory-persistence-adapter"
 import { resetMockServerActionCenterState } from "@/lib/cliniq-core/action-center/mock-server-state"
 
 import { GET } from "./route"
@@ -7,6 +9,8 @@ import { GET } from "./route"
 describe("GET /api/action-center", () => {
   beforeEach(() => {
     resetMockServerActionCenterState()
+    resetMemoryPersistenceAdapterState()
+    resetMemoryActionCenterBootstrap()
   })
 
   it("returns 200 with ok true and stable payload shape", async () => {

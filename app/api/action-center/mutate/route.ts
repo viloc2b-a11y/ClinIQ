@@ -1,9 +1,11 @@
-import { mutateActionCenter } from "@/lib/cliniq-core/action-center/mutate-action-center"
+import { bootstrapMemoryActionCenter } from "@/lib/cliniq-core/action-center/bootstrap-memory-action-center"
+import { mutateActionCenterFromPersistence } from "@/lib/cliniq-core/action-center/mutate-action-center-from-persistence"
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const result = mutateActionCenter(body)
+    await bootstrapMemoryActionCenter()
+    const result = await mutateActionCenterFromPersistence(body)
 
     if (!result.ok) {
       const status =
