@@ -25,6 +25,13 @@ import { toRevenueProtectionExpectedRows } from "../lib/document-ingestion/core-
 import { toCoreSoaIntakePayload } from "../lib/document-ingestion/core-bridges/to-core-soa-intake-payload"
 import { toCoreSoaStructuredInput } from "../lib/document-ingestion/core-bridges/to-core-soa-structured-input"
 import { runRevenueProtectionReview } from "../lib/document-ingestion/matching/run-revenue-protection-review"
+import {
+  MemoryPersistenceAdapter,
+  resetMemoryPersistenceAdapterState,
+} from "../lib/cliniq-core/action-center/memory-persistence-adapter"
+import { verifyActionCenterWrite } from "../lib/document-ingestion/core-bridges/verify-action-center-write"
+import { isActionCenterPersistenceEnabled } from "../lib/cliniq-core/action-center/persistence-feature-flag"
+import { resolveActionCenterPersistenceAdapter } from "../lib/cliniq-core/action-center/resolve-persistence-adapter"
 
 async function main(): Promise<void> {
   const intake = toCoreSoaIntakePayload({
@@ -68,6 +75,20 @@ async function main(): Promise<void> {
   })
 
   console.log("SoA Event Store Write Input Demo")
+  console.log("")
+  console.log("ENABLE_ACTION_CENTER_PERSISTENCE", isActionCenterPersistenceEnabled())
+  try {
+    const probe = resolveActionCenterPersistenceAdapter()
+    console.log(
+      "resolveActionCenterPersistenceAdapter",
+      probe instanceof MemoryPersistenceAdapter ? "memory" : "non-memory adapter",
+    )
+  } catch (e) {
+    console.log(
+      "resolveActionCenterPersistenceAdapter error:",
+      e instanceof Error ? e.message : String(e),
+    )
+  }
   console.log("")
   console.log("Intake Summary")
   console.log(JSON.stringify(intake.summary, null, 2))
@@ -143,6 +164,43 @@ async function main(): Promise<void> {
   console.log("")
   console.log("Controlled Write Mock Result")
   console.log(JSON.stringify(controlledWriteMock, null, 2))
+
+  resetMemoryPersistenceAdapterState()
+  const adapter = new MemoryPersistenceAdapter()
+  const controlledWriteMemory = await runEventStoreControlledWrite({
+    rows: boundary.rows,
+    allowWrite: true,
+    persistenceAdapter: adapter,
+  })
+
+  console.log("")
+  console.log("Controlled Write Memory Result")
+  console.log(JSON.stringify(controlledWriteMemory, null, 2))
+
+  const verify = await verifyActionCenterWrite({
+    adapter,
+    expectedClientRefs: boundary.rows
+      .map((r) => {
+        const row = r as Record<string, unknown>
+        const ce = row.clientEventId
+        if (typeof ce === "string" && ce.length > 0) return ce
+        const sa = row.sourceActionId
+        if (typeof sa === "string" && sa.length > 0) return sa
+        const de = (row.metadata as Record<string, unknown> | undefined)?.documentEngine as
+          | Record<string, unknown>
+          | undefined
+        const deCe = de?.clientEventId
+        if (typeof deCe === "string" && deCe.length > 0) return deCe
+        const deSa = de?.sourceActionId
+        if (typeof deSa === "string" && deSa.length > 0) return deSa
+        return null
+      })
+      .filter((ref): ref is string => ref != null),
+  })
+
+  console.log("")
+  console.log("Action Center Verification")
+  console.log(JSON.stringify(verify, null, 2))
 }
 
 main().catch((err) => {

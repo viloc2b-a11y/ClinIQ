@@ -1,0 +1,14 @@
+.env
+.tmp/
+__pycache__/
+*.pyc
+.gemini/
+.idea/
+.vscode/
+.cursor/
+argv.json
+extensions/
+uploads/
+*.log
+agent-transcripts/
+mcps/

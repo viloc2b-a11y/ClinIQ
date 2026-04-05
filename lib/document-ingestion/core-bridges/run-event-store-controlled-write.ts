@@ -2,12 +2,16 @@
  * Document Engine v1 — controlled boundary wrapper: validate + dry partition + optional write (injected writer or Action Center adapter).
  *
  * Safe built-in path (no Supabase here): {@link ActionCenterPersistenceAdapter.upsertActionItems} via {@link mapRowToActionCenterItem}
- * when `allowWrite` + `persistenceAdapter` and no `writer`. Injected `writer` takes precedence.
+ * when `allowWrite` + explicit `persistenceAdapter` and no `writer`. If `writer` and `persistenceAdapter` are omitted,
+ * {@link resolveActionCenterPersistenceAdapter} is used (memory by default; Supabase only when flags allow).
+ * Injected `writer` takes precedence over any persistence path.
  */
 
 import type { ActionCenterPersistenceAdapter } from "../../cliniq-core/action-center/persistence-adapter"
 import type { ActionItemRow } from "../../cliniq-core/action-center/persistence-types"
 import { mapRowToActionCenterItem } from "../../cliniq-core/action-center/persistence-mappers"
+import { MemoryPersistenceAdapter } from "../../cliniq-core/action-center/memory-persistence-adapter"
+import { resolveActionCenterPersistenceAdapter } from "../../cliniq-core/action-center/resolve-persistence-adapter"
 
 import { boundaryRowClientRef } from "./run-event-store-dry-write"
 import { validateEventStoreBoundary } from "./validate-event-store-boundary"
@@ -30,7 +34,6 @@ export type ControlledWriterResult = {
 export type ControlledWriter = (input: { rows: BoundaryRow[] }) => Promise<ControlledWriterResult>
 
 const NOTE_WRITE_DISABLED = "Write disabled. Returning dry-run style result only."
-const NOTE_NO_SAFE_WRITER = "No safe boundary write function is currently available."
 const NOTE_NO_ACCEPTED_TO_UPSERT = "No accepted rows to upsert."
 
 const WARN_EMPTY = "No boundary rows provided for controlled write."
@@ -39,6 +42,12 @@ const WARN_DRY_RUN_MODE = "Controlled write ran in dry_run mode."
 const WARN_WRITE_REQUESTED_NO_ADAPTER =
   "Write was requested but no safe boundary writer is available."
 const WARN_WRITE_FAILURE = "Boundary write attempt reported failures."
+const WARN_RESOLVER_FAILED = "Controlled write could not resolve a persistence adapter for writing."
+
+const NOTE_RESOLVED_MEMORY =
+  "Resolved Action Center persistence adapter: memory (ENABLE_ACTION_CENTER_PERSISTENCE is not enabled)."
+const NOTE_RESOLVED_SUPABASE =
+  "Resolved Action Center persistence adapter: Supabase (feature flag and persistence mode allow real persistence)."
 
 export type RunEventStoreControlledWriteInput = {
   rows: BoundaryRow[]
@@ -216,8 +225,28 @@ export async function runEventStoreControlledWrite(
         warnings.push(WARN_WRITE_FAILURE)
       }
     } else {
-      writeNotes.push(NOTE_NO_SAFE_WRITER)
-      warnings.push(WARN_WRITE_REQUESTED_NO_ADAPTER)
+      try {
+        const resolved = resolveActionCenterPersistenceAdapter()
+        const useMemory = resolved instanceof MemoryPersistenceAdapter
+        writeNotes.push(useMemory ? NOTE_RESOLVED_MEMORY : NOTE_RESOLVED_SUPABASE)
+        attempted = true
+        const r = await maybeWriteAcceptedRows({
+          rows,
+          acceptedIndices: accepted.map((a) => a.index),
+          adapter: resolved,
+        })
+        succeeded = r.succeeded
+        failed = r.failed
+        writeNotes.push(...r.notes)
+        if (failed > 0) {
+          warnings.push(WARN_WRITE_FAILURE)
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e)
+        writeNotes.push(`Persistence adapter resolution failed: ${msg}`)
+        warnings.push(WARN_RESOLVER_FAILED)
+        warnings.push(WARN_WRITE_REQUESTED_NO_ADAPTER)
+      }
     }
   }
 

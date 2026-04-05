@@ -2,9 +2,84 @@
 
 Internal clinical operations and revenue-intelligence shell: deterministic core engines in TypeScript plus a Next.js app. Kept separate from legacy marketing or VRG site code.
 
+## Monorepo layout
+
+| Part | Path | Role |
+|------|------|------|
+| **Web app** | Repository root (`app/`, `lib/`) | Next.js + TypeScript engines (sections below) |
+| **Protocol / assistant API** | [`backend/`](backend/) | Python + FastAPI (`scripts/cliniq_backend.py`), uploads, static UI — see [`backend/README.md`](backend/README.md) |
+| **Python engine** | [`cliniq-engine/`](cliniq-engine/) | SoA / events utilities; own `requirements.txt` and venv |
+
+### FastAPI backend (from repo root)
+
+One-shot setup:
+
+```bash
+cd backend
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # set ANTHROPIC_API_KEY (and optional ANTHROPIC_MODEL, CORS_ORIGINS)
+```
+
+Then from the **repository root**, start the API (uses `backend/.venv` when present; works on Windows and macOS/Linux):
+
+```bash
+npm run backend:dev
+```
+
+Or manually from `backend/`: `fastapi dev scripts/cliniq_backend.py`
+
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). If the Next app calls this API, set `CORS_ORIGINS` in `backend/.env` to include `http://localhost:3000` (comma-separated if multiple).
+
+Run commands from `backend/` so uploads resolve to `backend/uploads/` and `load_dotenv()` picks up `backend/.env`.
+
 ## Stack
 
 Next.js (App Router), TypeScript, Tailwind CSS v4, shadcn/ui, Supabase (`@supabase/ssr` + `@supabase/supabase-js`). Core business logic lives under `lib/cliniq-core/` (framework-agnostic, Vitest-tested).
+
+## Fresh machine (replicate from GitHub)
+
+Everything needed to run the app is in this repository—clone it on any machine with Git, Node.js 20+, and (for the FastAPI service) Python 3.10+.
+
+```bash
+git clone https://github.com/viloc2b-a11y/ClinIQ.git
+cd ClinIQ
+```
+
+**1 — Next.js app (port 3000)**
+
+```bash
+cp .env.example .env.local
+# Edit .env.local: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+# SUPABASE_SERVICE_ROLE_KEY (see [Setup](#setup) for self-hosted Supabase).
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000). Some routes need valid Supabase keys; others work for local UI and tests.
+
+**2 — FastAPI backend (port 8000, optional)**
+
+```bash
+cd backend
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# Set ANTHROPIC_API_KEY; use CORS_ORIGINS=http://localhost:3000 if the Next app calls this API.
+cd ..
+npm run backend:dev
+```
+
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000). See [`backend/README.md`](backend/README.md) for protocol/contract features.
+
+**3 — Database (optional)**  
+To persist Action Center or related tables on your Postgres/Supabase instance, apply the SQL under `supabase/schema/` and `supabase/migrations/` using Studio or `psql`. Keep secrets in `.env.local` only (never commit).
+
+**Sanity check:** `npm test`
 
 ## Setup
 

@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ClinIQ — Contract, IRB &amp; Protocol Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #171a23;
+    --surface2: #1e2130;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --accent: #4f8ef7;
+    --accent2: #7eb8f7;
+    --gold: #c9a84c;
+    --gold2: #e8c87a;
+    --danger: #e05a5a;
+    --warn: #d9894a;
+    --ok: #4caf82;
+    --text: #e8eaf0;
+    --text2: #9aa0b8;
+    --text3: #5a6180;
+    --mono: 'DM Mono', monospace;
+    --serif: 'DM Serif Display', serif;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 32px; height: 64px; border-bottom: 1px solid var(--border);
+    background: var(--bg); position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow);
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--gold));
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 16px; color: #fff; font-weight: 400;
+  }
+  .logo-text { font-family: var(--serif); font-size: 20px; letter-spacing: 0.02em; color: var(--text); }
+  .logo-text span { color: var(--accent2); }
+  .header-badge {
+    font-family: var(--mono); font-size: 12px; color: var(--gold); border: 1px solid rgba(201,168,76,0.3);
+    padding: 4px 10px; border-radius: 6px; background: rgba(201,168,76,0.06); letter-spacing: 0.08em;
+  }
+  .app {
+    display: grid; grid-template-columns: 280px 1fr 360px;
+    flex: 1; overflow: hidden; height: calc(100vh - 64px);
+  }
+  .panel-left {
+    border-right: 1px solid var(--border); display: flex; flex-direction: column;
+    overflow-y: auto; background: var(--surface); box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  }
+  .panel-section { padding: 20px; border-bottom: 1px solid var(--border); }
+  .panel-label {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em; color: var(--text3);
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .mode-list { display: flex; flex-direction: column; gap: 6px; }
+  .mode-btn {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    border: 1px solid transparent; border-radius: var(--radius); background: transparent;
+    color: var(--text2); cursor: pointer; text-align: left; transition: all 0.18s;
+  }
+  .mode-btn:hover { background: var(--surface2); color: var(--text); }
+  .mode-btn.active {
+    background: rgba(79,142,247,0.1); border-color: rgba(79,142,247,0.25); color: var(--accent2);
+  }
+  .mode-icon { font-size: 16px; width: 20px; flex-shrink: 0; line-height: 1.4; }
+  .mode-info { flex: 1; }
+  .mode-name { font-weight: 500; font-size: 13px; }
+  .mode-desc { font-size: 11px; color: var(--text3); margin-top: 2px; line-height: 1.4; }
+  .mode-btn.active .mode-desc { color: rgba(126,184,247,0.7); }
+  .playbook-list { display: flex; flex-direction: column; gap: 6px; }
+  .playbook-btn {
+    display: block; width: 100%; text-align: left; padding: 9px 12px;
+    border: 1px solid transparent; border-radius: var(--radius); background: transparent;
+    color: var(--text2); cursor: pointer; font-size: 12px; font-family: var(--sans);
+    transition: all 0.18s;
+  }
+  .playbook-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .playbook-btn.active {
+    background: rgba(201,168,76,0.12); border-color: rgba(201,168,76,0.35); color: var(--gold2);
+  }
+  .chat-thread-container { display: flex; flex-direction: column; gap: 24px; width: 100%; min-height: min-content; }
+  .playbook-viewer {
+    display: none; flex-direction: column; flex: 1; min-height: 0; gap: 16px; width: 100%;
+  }
+  .playbook-viewer.open { display: flex; }
+  .playbook-toolbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border);
+  }
+  .playbook-toolbar-title {
+    font-family: var(--serif); font-size: 18px; color: var(--text); flex: 1; min-width: 140px;
+  }
+  .playbook-tool-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .playbook-tool-btn {
+    font-family: var(--mono); font-size: 11px; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border2); background: var(--surface2); color: var(--text2);
+  }
+  .playbook-tool-btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .playbook-tool-btn.primary { background: rgba(79,142,247,0.15); border-color: rgba(79,142,247,0.35); color: var(--accent2); }
+  .playbook-doc-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+  .playbook-doc.msg-bubble { max-width: 100%; white-space: normal; }
+  .playbook-doc ul, .playbook-doc ol { margin: 8px 0 8px 1.25em; }
+  .playbook-doc li { margin: 4px 0; }
+  .playbook-doc table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 12px 0; }
+  .playbook-doc th, .playbook-doc td { border: 1px solid var(--border2); padding: 8px 10px; text-align: left; }
+  .playbook-doc th { background: var(--surface2); color: var(--text2); font-family: var(--mono); font-size: 11px; }
+  .playbook-signature-area {
+    margin-top: 28px; padding-top: 20px; border-top: 2px solid var(--border2);
+    font-size: 13px; color: var(--text2); line-height: 1.6;
+  }
+  .playbook-signature-area .sig-section { margin-bottom: 20px; }
+  .playbook-signature-area .sig-section h3 {
+    font-family: var(--serif); font-size: 14px; color: var(--text); margin-bottom: 12px;
+  }
+  .playbook-signature-area .sig-line {
+    margin: 10px 0; padding: 8px 0; border-bottom: 1px solid var(--border2);
+    min-height: 1.6em; font-family: var(--mono); font-size: 12px;
+  }
+  .certification-inner { padding-bottom: 24px; }
+  .cert-progress {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cert-pill {
+    width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 11px; color: var(--text3); border: 1px solid var(--border2); background: var(--surface2);
+  }
+  .cert-pill.done { background: rgba(76,175,130,0.2); border-color: var(--ok); color: var(--ok); }
+  .cert-step-card {
+    margin-bottom: 20px; padding: 16px; border-radius: var(--radius); border: 1px solid var(--border2);
+    background: rgba(255,255,255,0.02);
+  }
+  .cert-step-card h3 { font-family: var(--serif); font-size: 15px; color: var(--accent2); margin-bottom: 10px; }
+  .cert-check-label { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text2); line-height: 1.5; cursor: pointer; }
+  .cert-check-label input { margin-top: 3px; flex-shrink: 0; }
+  .quiz-q { margin-bottom: 20px; }
+  .quiz-prompt { margin-bottom: 8px; color: var(--text); }
+  .quiz-opt { display: block; padding: 6px 0 6px 4px; font-size: 13px; color: var(--text2); cursor: pointer; }
+  .quiz-opt input { margin-right: 8px; vertical-align: middle; }
+  .cert-pass { color: var(--ok); font-size: 13px; margin-top: 10px; font-weight: 500; }
+  .cert-fail { color: var(--danger); font-size: 13px; margin-top: 10px; }
+  .cert-field { width: 100%; max-width: 400px; margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font-size: 13px; }
+  .cert-gen-btn { margin-top: 12px; padding: 10px 18px; font-family: var(--mono); font-size: 12px; border-radius: 8px; border: 1px solid rgba(201,168,76,0.4); background: rgba(201,168,76,0.15); color: var(--gold2); cursor: pointer; }
+  .cert-gen-btn:hover:not(:disabled) { background: rgba(201,168,76,0.25); }
+  .cert-gen-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .visit-log-form { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .visit-log-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; color: var(--text3);
+    text-transform: uppercase; margin-top: 4px;
+  }
+  .visit-log-input { width: 100%; max-width: 100%; box-sizing: border-box; }
+  .visit-log-check-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 4px; }
+  .visit-log-check-row label { font-size: 12px; color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 6px; }
+  .visit-log-confirm { font-size: 12px; color: var(--ok); margin-top: 10px; font-family: var(--mono); }
+  input.visit-log-date { color-scheme: dark; }
+  .ops-dash-viewer .dash-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px; }
+  .dash-intro { font-size: 12px; color: var(--text3); line-height: 1.5; margin-bottom: 18px; max-width: 640px; }
+  .dash-grid { display: flex; flex-direction: column; gap: 16px; }
+  .dash-card {
+    background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 14px 16px; text-align: left;
+  }
+  .dash-card-title {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--gold2); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .dash-table { width: 100%; font-size: 12px; color: var(--text2); border-collapse: collapse; }
+  .dash-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; }
+  .dash-table td:first-child { color: var(--text3); width: 58%; font-family: var(--mono); font-size: 11px; }
+  .dash-table td:last-child { color: var(--text); text-align: right; font-weight: 500; }
+  .dash-list { list-style: none; margin: 0; padding: 0; font-size: 12px; color: var(--text2); line-height: 1.6; }
+  .dash-list li { padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; justify-content: space-between; gap: 12px; }
+  .dash-list li span:first-child { color: var(--text3); font-family: var(--mono); font-size: 11px; }
+  .dash-refresh { margin-left: auto; }
+  .ir-badge-hint { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-left: 8px; max-width: 220px; line-height: 1.35; text-align: right; }
+  .ir-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .ir-tab { padding: 8px 12px; font-size: 11px; font-family: var(--mono); border: 1px solid var(--border2); border-radius: 8px; background: transparent; color: var(--text2); cursor: pointer; }
+  .ir-tab:hover { border-color: var(--accent); color: var(--text); }
+  .ir-tab.active { background: rgba(79,142,247,0.12); border-color: rgba(79,142,247,0.35); color: var(--accent2); }
+  .ir-panel { display: none; }
+  .ir-panel.active { display: block; }
+  .ir-kpi { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .ir-kpi-card { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .ir-kpi-val { font-family: var(--serif); font-size: 22px; color: var(--accent2); }
+  .ir-kpi-lbl { font-size: 9px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; margin-top: 4px; }
+  .ir-finding { border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; background: var(--surface2); }
+  .ir-finding.critical { border-left: 3px solid var(--danger); }
+  .ir-finding.major { border-left: 3px solid var(--warn); }
+  .ir-finding-meta { font-size: 11px; color: var(--text3); margin-top: 8px; }
+  .ir-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+  .ir-modal-overlay.open { display: flex; }
+  .ir-modal { background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); max-width: 420px; width: 100%; padding: 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+  .ir-modal h4 { margin: 0 0 10px 0; font-size: 14px; color: var(--gold2); }
+  .ir-modal p { margin: 0; font-size: 13px; color: var(--text2); line-height: 1.55; }
+  .ir-modal .ir-type { font-size: 10px; font-family: var(--mono); color: var(--text3); margin-top: 10px; }
+  .ir-modal-close { margin-top: 16px; }
+  .ir-check-row { display: grid; grid-template-columns: 1fr 130px; gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12px; }
+  .ir-check-row select { width: 100%; padding: 6px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font-size: 11px; }
+  .ir-copy { font-size: 12px; color: var(--text3); line-height: 1.5; margin-bottom: 14px; max-width: 640px; }
+
+  .ir-doc-wrap { overflow-x: auto; margin-top: 8px; border: 1px solid var(--border2); border-radius: var(--radius); }
+  .ir-doc-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .ir-doc-table th { text-align: left; padding: 8px 10px; background: var(--surface2); color: var(--text3); font-family: var(--mono); text-transform: uppercase; font-size: 9px; border-bottom: 1px solid var(--border2); }
+  .ir-doc-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; color: var(--text2); }
+  .ir-doc-table tr:last-child td { border-bottom: none; }
+  .ir-doc-table select { width: 100%; max-width: 140px; padding: 5px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); }
+  .ir-doc-table input[type=number] { width: 56px; padding: 5px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); }
+
+  .ir-sim-q { background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--radius); padding: 12px; margin-bottom: 10px; font-size: 13px; }
+  @media print { .ir-tabs, .playbook-toolbar .playbook-tool-btn { display: none !important; } .ir-panel { display: block !important; } }
+
+  .dash-legend {
+    display: flex; flex-wrap: wrap; gap: 14px 20px; font-size: 11px; color: var(--text3);
+    font-family: var(--mono); margin-bottom: 16px; padding: 10px 12px; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: var(--radius);
+  }
+  .dash-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dash-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dash-legend .lg-red { background: #c44; box-shadow: 0 0 0 2px rgba(204,68,68,0.25); }
+  .dash-legend .lg-yellow { background: #c9a227; box-shadow: 0 0 0 2px rgba(201,162,39,0.25); }
+  .dash-legend .lg-green { background: #3d9e5c; box-shadow: 0 0 0 2px rgba(61,158,92,0.25); }
+  .dash-card-head {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+    padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--border);
+  }
+  .dash-card-head .dash-card-title {
+    margin-bottom: 0; padding-bottom: 0; border-bottom: none; flex: 1; min-width: 0;
+  }
+  .dash-status-badge {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 5px 11px; border-radius: 999px; border: 1px solid; white-space: nowrap; flex-shrink: 0;
+  }
+  .dash-status-badge.status-red {
+    background: rgba(200, 72, 72, 0.14); border-color: rgba(220, 100, 100, 0.45); color: #e8a0a0;
+  }
+  .dash-status-badge.status-yellow {
+    background: rgba(201, 162, 39, 0.12); border-color: rgba(201, 168, 76, 0.45); color: var(--gold2);
+  }
+  .dash-status-badge.status-green {
+    background: rgba(61, 158, 92, 0.12); border-color: rgba(80, 180, 120, 0.4); color: #8fd4a8;
+  }
+  .dash-status-expl { font-size: 12px; color: var(--text3); margin: 0 0 14px 0; line-height: 1.45; }
+  @media print {
+    body.print-playbook-only header,
+    body.print-playbook-only .panel-left,
+    body.print-playbook-only .panel-right,
+    body.print-playbook-only #chat-input-area,
+    body.print-playbook-only #chat-thread-container { display: none !important; }
+    body.print-playbook-only .app { display: block !important; height: auto !important; overflow: visible !important; }
+    body.print-playbook-only .panel-center { overflow: visible !important; }
+    body.print-playbook-only .chat-area { padding: 16px !important; background: #fff !important; }
+    body.print-playbook-only .playbook-viewer.open { display: flex !important; }
+    body.print-playbook-only .playbook-toolbar .playbook-tool-btn { display: none !important; }
+    body.print-playbook-only .playbook-toolbar { border-bottom: 1px solid #ccc !important; }
+    body.print-playbook-only .playbook-toolbar-title { color: #111 !important; }
+    body.print-playbook-only .playbook-doc.msg-bubble { background: #fff !important; color: #111 !important; border: none !important; max-width: 100% !important; }
+    body.print-playbook-only .msg-meta { color: #555 !important; }
+    body.print-playbook-only { background: #fff !important; color: #111 !important; }
+    body.print-playbook-only .playbook-signature-area { border-top: 2px solid #333 !important; color: #111 !important; }
+    body.print-playbook-only .playbook-signature-area .sig-line { border-bottom: 1px solid #999 !important; }
+    body.print-cert-only header,
+    body.print-cert-only .panel-left,
+    body.print-cert-only .panel-right,
+    body.print-cert-only #chat-input-area,
+    body.print-cert-only #chat-thread-container,
+    body.print-cert-only #playbook-viewer { display: none !important; }
+    body.print-cert-only .app { display: block !important; height: auto !important; }
+    body.print-cert-only .panel-center { overflow: visible !important; }
+    body.print-cert-only .certification-viewer.open { display: flex !important; }
+    body.print-cert-only .chat-area { background: #fff !important; padding: 16px !important; }
+    body.print-cert-only .certification-inner,
+    body.print-cert-only .msg-bubble { background: #fff !important; color: #111 !important; border: none !important; }
+    body.print-cert-only .cert-gen-btn,
+    body.print-cert-only .playbook-toolbar .playbook-tool-btn { display: none !important; }
+    body.print-cert-only .playbook-toolbar-title { color: #111 !important; }
+    body.print-cert-only { background: #fff !important; }
+  }
+  .upload-zone {
+    border: 1px dashed var(--border2); border-radius: var(--radius); padding: 16px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: transparent;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--accent); background: rgba(79,142,247,0.05); }
+  .upload-icon { font-size: 22px; margin-bottom: 6px; }
+  .upload-hint { font-size: 11px; color: var(--text3); line-height: 1.5; }
+  .upload-hint b { color: var(--text2); font-weight: 500; }
+  .file-chip {
+    display: flex; align-items: center; gap: 8px; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: 8px; padding: 8px 10px; margin-top: 8px;
+  }
+  .file-chip-icon { font-size: 14px; }
+  .file-chip-name { font-size: 12px; color: var(--text); flex: 1; word-break: break-all; }
+  .file-chip-remove {
+    background: none; border: none; color: var(--text3); cursor: pointer;
+    font-size: 14px; padding: 0; line-height: 1;
+  }
+  .file-chip-remove:hover { color: var(--danger); }
+  .history-list { display: flex; flex-direction: column; gap: 4px; }
+  .history-item {
+    padding: 7px 10px; border-radius: 7px; font-size: 12px;
+    color: var(--text2); cursor: pointer; transition: all 0.15s;
+  }
+  .history-item:hover { background: var(--surface2); color: var(--text); }
+  .history-empty { font-size: 12px; color: var(--text3); font-style: italic; }
+  .panel-center { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+  .chat-area {
+    flex: 1; overflow-y: auto; padding: 32px 40px; display: flex; flex-direction: column;
+    gap: 24px; scroll-behavior: smooth; background: linear-gradient(to bottom, var(--bg) 0%, var(--surface) 100%);
+  }
+  .welcome { margin: auto; text-align: center; max-width: 480px; padding: 40px 0; }
+  .welcome-title { font-family: var(--serif); font-size: 32px; line-height: 1.2; margin-bottom: 12px; }
+  .welcome-title em { color: var(--accent2); font-style: italic; }
+  .welcome-sub { font-size: 14px; color: var(--text2); line-height: 1.7; margin-bottom: 28px; }
+  .suggestion-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .suggestion-btn {
+    background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius);
+    padding: 12px 14px; text-align: left; cursor: pointer; transition: all 0.18s; color: var(--text2); font-size: 12px; line-height: 1.5;
+  }
+  .suggestion-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--text); }
+  .message { display: flex; flex-direction: column; gap: 8px; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+  .message.user { align-items: flex-end; }
+  .message.assistant { align-items: flex-start; }
+  .msg-bubble { max-width: 85%; padding: 14px 18px; border-radius: 14px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+  .user .msg-bubble { background: rgba(79,142,247,0.15); border: 1px solid rgba(79,142,247,0.25); border-bottom-right-radius: 4px; }
+  .assistant .msg-bubble { background: var(--surface); border: 1px solid var(--border2); border-bottom-left-radius: 4px; }
+  .input-area { padding: 16px 40px 24px; border-top: 1px solid var(--border); z-index: 10; }
+  .input-box { display: flex; gap: 10px; align-items: flex-end; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 12px 14px; }
+  .input-box:focus-within { border-color: var(--accent); }
+  #chat-input { flex: 1; background: transparent; border: none; outline: none; color: var(--text); resize: none; max-height: 160px; line-height: 1.6; }
+  .send-btn { width: 36px; height: 36px; background: var(--accent); border: none; border-radius: 8px; cursor: pointer; color: #fff; display: flex; justify-content: center; align-items: center; }
+  .send-btn:hover { background: var(--accent2); transform: scale(1.05); }
+  .send-btn:disabled { opacity: 0.5; }
+  .panel-right { border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); box-shadow: -2px 0 10px rgba(0,0,0,0.15); }
+  .issue-list { display: flex; flex-direction: column; gap: 8px; }
+  .issue-card { border-radius: var(--radius); padding: 10px 12px; border-left: 3px solid; background: var(--surface2); font-size: 12px; line-height: 1.5; }
+  .issue-card.critical { border-color: var(--danger); }
+  .issue-card.moderate { border-color: var(--warn); }
+  .issue-card.minor { border-color: var(--ok); }
+  .issue-tag { font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .issue-card.critical .issue-tag { color: var(--danger); }
+  .issue-card.moderate .issue-tag { color: var(--warn); }
+  .issue-card.minor .issue-tag { color: var(--ok); }
+  .issue-text { color: var(--text2); }
+  .issues-empty { font-size: 12px; color: var(--text3); font-style: italic; text-align: center; padding: 20px 0; }
+  .protocol-block { margin-bottom: 18px; }
+  .protocol-block-title {
+    font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text2); margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .protocol-mini-head {
+    font-size: 11px; font-weight: 600; color: var(--accent2); margin: 10px 0 6px;
+    font-family: var(--sans);
+  }
+  .checklist-row {
+    display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--text2);
+    line-height: 1.45; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .checklist-mark { color: var(--ok); flex-shrink: 0; font-size: 12px; line-height: 1.45; }
+  .protocol-li {
+    font-size: 12px; color: var(--text2); line-height: 1.45; padding: 5px 0 5px 12px;
+    border-left: 2px solid var(--border2); margin-bottom: 4px;
+  }
+  .protocol-json-fallback-notice {
+    font-size: 11px; color: var(--warn); background: rgba(217,137,74,0.1);
+    border: 1px solid rgba(217,137,74,0.25); border-radius: var(--radius); padding: 8px 10px;
+    margin-bottom: 12px; line-height: 1.4;
+  }
+  .protocol-risk-detail { font-size: 11px; color: var(--text3); margin-top: 6px; }
+  .protocol-risk-detail b { color: var(--text2); }
+  .protocol-source {
+    font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid var(--border); line-height: 1.45;
+  }
+  .protocol-source b { color: var(--gold2); font-weight: 500; }
+  .protocol-meta {
+    font-size: 11px; color: var(--text3); margin-top: 6px; line-height: 1.5;
+  }
+  .protocol-meta b { color: var(--text2); }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+  .stat-val { font-family: var(--serif); font-size: 22px; color: var(--accent2); display: block; }
+  .stat-label { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-top: 2px; }
+  .export-btn { width: 100%; background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3); border-radius: var(--radius); color: var(--gold2); font-family: var(--mono); font-size: 12px; padding: 10px; cursor: pointer; }
+  .export-btn:hover { background: rgba(201,168,76,0.18); border-color: var(--gold); }
+  .export-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .audit-export-hint { font-size: 11px; color: var(--text3); line-height: 1.45; margin-bottom: 10px; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+  .msg-bubble h2 { font-family: var(--serif); font-size: 17px; margin: 14px 0 8px; color: var(--text); font-weight: 500; }
+  .msg-bubble h3 { font-family: var(--serif); font-size: 16px; margin: 12px 0 6px; color: var(--accent2); }
+  .msg-bubble strong { color: var(--text); }
+  .msg-bubble em { color: var(--gold2); }
+  .msg-bubble code { font-family: var(--mono); font-size: 12px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; color: var(--text2); }
+  
+  /* Disclaimer block */
+  .disclaimer-block {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(224, 90, 90, 0.08);
+    border: 1px solid rgba(224, 90, 90, 0.2);
+    border-radius: var(--radius);
+  }
+  .disclaimer-title {
+    color: var(--danger); font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+  }
+  .disclaimer-text {
+    font-size: 11px; color: var(--text2); line-height: 1.5; margin-top: 4px;
+  }
+
+  /* Typing */
+  .typing { display: flex; gap: 5px; align-items: center; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border2); border-radius: 14px; border-bottom-left-radius: 4px; width: fit-content; }
+  .typing-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3); animation: bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); background: var(--accent); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">C</div>
+    <div class="logo-text">Clin<span>IQ</span></div>
+  </div>
+  <div class="header-badge">v1.3 • execution-first</div>
+</header>
+
+<div class="app">
+  <!-- LEFT PANEL -->
+  <aside class="panel-left">
+    <div class="panel-section">
+      <div class="panel-label">Analysis mode</div>
+      <div class="mode-list">
+        <button class="mode-btn active" data-mode="contract" onclick="setMode('contract', this)">
+          <span class="mode-icon">📋</span>
+          <span class="mode-info">
+            <div class="mode-name">Contract review</div>
+            <div class="mode-desc">Critical issues, suggested language</div>
+          </span>
+        </button>
+        <button class="mode-btn" data-mode="irb" onclick="setMode('irb', this)">
+          <span class="mode-icon">🏥</span>
+          <span class="mode-info">
+            <div class="mode-name">IRB drafter</div>
+            <div class="mode-desc">Forms and submission drafts</div>
+          </span>
+        </button>
+        <button class="mode-btn" data-mode="qa" onclick="setMode('qa', this)">
+          <span class="mode-icon">⚖️</span>
+          <span class="mode-info">
+            <div class="mode-name">Regulatory Q&amp;A</div>
+            <div class="mode-desc">GCP, 21 CFR, FDA guidance</div>
+          </span>
+        </button>
+        <button class="mode-btn" data-mode="compare" onclick="setMode('compare', this)">
+          <span class="mode-icon">🔍</span>
+          <span class="mode-info">
+            <div class="mode-name">Compare versions</div>
+            <div class="mode-desc">Requires two documents</div>
+          </span>
+        </button>
+        <button class="mode-btn" data-mode="protocol" onclick="setMode('protocol', this)">
+          <span class="mode-icon">🛡️</span>
+          <span class="mode-info">
+            <div class="mode-name">Protocol review</div>
+            <div class="mode-desc">Execution, checklists, CRA red flags</div>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">Site Playbooks</div>
+      <p class="audit-export-hint" style="margin-bottom:10px">Static SOPs and checklists. No upload required.</p>
+      <div class="playbook-list">
+        <button type="button" class="playbook-btn" data-playbook="sop" onclick="openPlaybook('sop')">SOP</button>
+        <button type="button" class="playbook-btn" data-playbook="training" onclick="openPlaybook('training')">Training</button>
+        <button type="button" class="playbook-btn" data-playbook="daily" onclick="openPlaybook('daily')">Daily checklist</button>
+        <button type="button" class="playbook-btn" data-playbook="weekly" onclick="openPlaybook('weekly')">Weekly control</button>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">Site Certification</div>
+      <p class="audit-export-hint" style="margin-bottom:10px">Training tracking, knowledge check, and certificate.</p>
+      <button type="button" class="playbook-btn" onclick="openCertificationViewer()">Open certification</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">Operations</div>
+      <p class="audit-export-hint" style="margin-bottom:10px">Risk, visits, and audit readiness (session memory).</p>
+      <button type="button" class="playbook-btn" onclick="openOperationsDashboard()">Operations Dashboard</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">Inspection Readiness</div>
+      <p class="audit-export-hint" style="margin-bottom:10px">Be inspection-ready before the inspector arrives.</p>
+      <button type="button" class="export-btn" onclick="openInspectionReadiness()">Run Inspection Check</button>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">Documents (max 2 in Compare)</div>
+      <div class="upload-zone" id="upload-zone"
+           ondragover="event.preventDefault(); this.classList.add('drag')"
+           ondragleave="this.classList.remove('drag')"
+           ondrop="handleDrop(event)"
+           onclick="document.getElementById('file-input').click()">
+        <div class="upload-icon">📂</div>
+        <div class="upload-hint"><b>Drag</b> or click<br>PDF · DOCX · TXT</div>
+      </div>
+      <input type="file" id="file-input" accept=".pdf,.docx,.txt" style="display:none" onchange="handleFileSelect(event)"/>
+      <div id="file-chips"></div>
+    </div>
+
+    <div class="panel-section" style="flex:1">
+      <div class="panel-label">Current session</div>
+      <div class="history-list" id="history-list">
+        <span class="history-empty">No queries yet</span>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <button class="export-btn" onclick="exportSession()">↓ Export session</button>
+    </div>
+  </aside>
+
+  <!-- CENTER PANEL -->
+  <main class="panel-center">
+    <div class="chat-area" id="chat-area">
+      <div id="chat-thread-container" class="chat-thread-container">
+        <div class="welcome" id="welcome">
+          <div class="welcome-title">Contracts, IRB &amp; protocol<br><em>faster.</em></div>
+          <div class="welcome-sub">
+            Built to reduce <b>protocol deviations</b> at small research sites.<br>
+            Execution checklists, contract review, IRB drafts, Q&amp;A, and version compare.
+          </div>
+        </div>
+      </div>
+      <div id="playbook-viewer" class="playbook-viewer" aria-hidden="true">
+        <div class="playbook-toolbar">
+          <button type="button" class="playbook-tool-btn primary" onclick="closePlaybookViewer()">← Back to chat</button>
+          <span class="playbook-toolbar-title" id="playbook-view-title">Site Playbook</span>
+          <div class="playbook-tool-actions">
+            <button type="button" class="playbook-tool-btn" id="playbook-download-btn" onclick="downloadCurrentPlaybook()">Download MD</button>
+            <button type="button" class="playbook-tool-btn" onclick="downloadPlaybookPdf()">Download PDF</button>
+            <button type="button" class="playbook-tool-btn" onclick="printPlaybook()">Print</button>
+          </div>
+        </div>
+        <div class="playbook-doc-scroll">
+          <div class="message assistant" style="max-width:100%">
+            <div class="msg-bubble playbook-doc">
+              <div id="playbook-doc-body"></div>
+              <div class="playbook-signature-area" id="playbook-signature-area" style="display:none">
+                <div id="playbook-checklist-attest" class="sig-section" style="display:none">
+                  <h3>Checklist attestation</h3>
+                  <p class="sig-line">Reviewed by: _______________________________________________</p>
+                  <p class="sig-line">Verified by (PI/Sub-I): _______________________________________________</p>
+                </div>
+                <div class="sig-section">
+                  <h3>Signature block</h3>
+                  <p class="sig-line">Name: _______________________________________________</p>
+                  <p class="sig-line">Role: _______________________________________________</p>
+                  <p class="sig-line">Signature: _______________________________________________</p>
+                  <p class="sig-line">Date: _______________________________________________</p>
+                </div>
+              </div>
+            </div>
+            <div class="msg-meta">Site Playbook · static reference · sign in ink where indicated</div>
+          </div>
+        </div>
+      </div>
+      <div id="certification-viewer" class="playbook-viewer certification-viewer" aria-hidden="true">
+        <div class="playbook-toolbar">
+          <button type="button" class="playbook-tool-btn primary" onclick="closeCertificationViewer()">← Back to chat</button>
+          <span class="playbook-toolbar-title">Site Certification</span>
+          <div class="playbook-tool-actions">
+            <button type="button" class="playbook-tool-btn" onclick="printCertification()">Print</button>
+          </div>
+        </div>
+        <div class="playbook-doc-scroll cert-scroll">
+          <div class="msg-bubble playbook-doc certification-inner" style="max-width:100%">
+            <p style="font-size:13px;color:var(--text3);margin-bottom:16px">Complete each step in order. Progress syncs to the server session while it is running (in-memory MVP).</p>
+            <div class="cert-progress" id="cert-progress-row">
+              <span class="cert-pill" id="cert-pill-1" title="SOP">1</span>
+              <span class="cert-pill" id="cert-pill-2" title="Training">2</span>
+              <span class="cert-pill" id="cert-pill-3" title="Quiz">3</span>
+              <span class="cert-pill" id="cert-pill-4" title="Checklist">4</span>
+              <span class="cert-pill" id="cert-pill-5" title="Certificate">5</span>
+            </div>
+            <div class="cert-step-card">
+              <h3>Step 1: SOP completed</h3>
+              <label class="cert-check-label"><input type="checkbox" id="cert-sop" onchange="certSyncFromForm()"/> I confirm the <strong>SOP — Protocol deviation prevention</strong> (Site Playbooks) has been reviewed and completed for my role.</label>
+            </div>
+            <div class="cert-step-card">
+              <h3>Step 2: Training completed</h3>
+              <label class="cert-check-label"><input type="checkbox" id="cert-training" onchange="certSyncFromForm()"/> I confirm the <strong>Training module</strong> (Site Playbooks) has been completed.</label>
+            </div>
+            <div class="cert-step-card">
+              <h3>Step 3: Knowledge check</h3>
+              <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Multiple choice. Pass at least <strong>75%</strong> (4 of 5 correct).</p>
+              <div id="cert-quiz-container"></div>
+              <button type="button" class="playbook-tool-btn primary" onclick="submitCertQuiz()">Submit quiz</button>
+              <div id="cert-quiz-result"></div>
+            </div>
+            <div class="cert-step-card">
+              <h3>Step 4: Checklist verified</h3>
+              <label class="cert-check-label"><input type="checkbox" id="cert-checklist" onchange="certSyncFromForm()"/> I confirm the site uses the <strong>Daily operational checklist</strong> and <strong>Weekly control sheet</strong> (or equivalent) for active trials.</label>
+            </div>
+            <div class="cert-step-card">
+              <h3>Step 5: Generate certificate</h3>
+              <input type="text" class="cert-field" id="cert-site-name" placeholder="Site or department name" oninput="updateCertStepUI()"/>
+              <input type="text" class="cert-field" id="cert-signatory" placeholder="Signatory full name" oninput="updateCertStepUI()"/>
+              <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:4px">
+                <button type="button" class="cert-gen-btn" id="cert-generate-btn" disabled onclick="generateSiteCertificate()">Generate certificate (MD)</button>
+                <button type="button" class="cert-gen-btn" id="cert-generate-pdf-btn" disabled onclick="generateSiteCertificatePdf()">Download PDF</button>
+              </div>
+              <p style="font-size:11px;color:var(--text3);margin-top:10px">PDF and Markdown include a wet-ink signature section. Not a Part&nbsp;11 electronic record.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="operations-dashboard-viewer" class="playbook-viewer ops-dash-viewer" aria-hidden="true">
+        <div class="playbook-toolbar">
+          <button type="button" class="playbook-tool-btn primary" onclick="closeOperationsDashboard()">← Back to chat</button>
+          <span class="playbook-toolbar-title">Operations Dashboard</span>
+          <div class="playbook-tool-actions dash-refresh">
+            <button type="button" class="playbook-tool-btn" onclick="loadDashboardSummary()">Refresh</button>
+          </div>
+        </div>
+        <div class="dash-scroll">
+          <div class="msg-bubble playbook-doc" style="max-width:100%">
+            <p class="dash-intro">Summary built from this server session: structured Protocol Reviews, Audit Defense Pack exports, Visit Log saves, and static playbook availability. Restarting the backend clears in-memory history.</p>
+            <div class="dash-legend" aria-label="Status legend">
+              <span><i class="lg-red" aria-hidden="true"></i> Red — urgent</span>
+              <span><i class="lg-yellow" aria-hidden="true"></i> Yellow — monitor</span>
+              <span><i class="lg-green" aria-hidden="true"></i> Green — controlled</span>
+            </div>
+            <div id="dash-error" class="cert-fail" style="display:none;margin-bottom:12px"></div>
+            <div class="dash-grid">
+              <div class="dash-card">
+                <div class="dash-card-head">
+                  <div class="dash-card-title">1. Risk overview</div>
+                  <span id="dash-r-badge" class="dash-status-badge status-green" role="status"><span class="dash-status-label">On Track</span></span>
+                </div>
+                <p id="dash-r-expl" class="dash-status-expl"></p>
+                <table class="dash-table">
+                  <tr><td>Protocols analyzed</td><td id="dash-r-proto">—</td></tr>
+                  <tr><td>High-risk protocols (crit &gt; 0 or med ≥ 4)</td><td id="dash-r-high">—</td></tr>
+                  <tr><td>Total critical risks (all runs)</td><td id="dash-r-crit">—</td></tr>
+                  <tr><td>Total medium risks</td><td id="dash-r-med">—</td></tr>
+                  <tr><td>Total low risks</td><td id="dash-r-low">—</td></tr>
+                </table>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-head">
+                  <div class="dash-card-title">2. Visit execution</div>
+                  <span id="dash-v-badge" class="dash-status-badge status-green" role="status"><span class="dash-status-label">On Track</span></span>
+                </div>
+                <p id="dash-v-expl" class="dash-status-expl"></p>
+                <table class="dash-table">
+                  <tr><td>Visits logged</td><td id="dash-v-total">—</td></tr>
+                  <tr><td>Completion rate</td><td id="dash-v-cr">—</td></tr>
+                  <tr><td>Verification rate</td><td id="dash-v-vr">—</td></tr>
+                  <tr><td>Unverified visits</td><td id="dash-v-unv">—</td></tr>
+                </table>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-head">
+                  <div class="dash-card-title">3. Compliance alerts</div>
+                  <span id="dash-c-badge" class="dash-status-badge status-green" role="status"><span class="dash-status-label">On Track</span></span>
+                </div>
+                <p id="dash-c-expl" class="dash-status-expl"></p>
+                <table class="dash-table">
+                  <tr><td>Protocols without Audit Defense Pack</td><td id="dash-c-nopack">—</td></tr>
+                  <tr><td>High-risk reviews without matching visit logs</td><td id="dash-c-hirisk">—</td></tr>
+                  <tr><td>Missing visit execution logs (site signal)</td><td id="dash-c-miss">—</td></tr>
+                  <tr><td>Open weekly controls (placeholder)</td><td id="dash-c-week">—</td></tr>
+                </table>
+              </div>
+              <div class="dash-card">
+                <div class="dash-card-head">
+                  <div class="dash-card-title">4. Audit readiness</div>
+                  <span id="dash-a-badge" class="dash-status-badge status-green" role="status"><span class="dash-status-label">On Track</span></span>
+                </div>
+                <p id="dash-a-expl" class="dash-status-expl"></p>
+                <ul class="dash-list">
+                  <li><span>Audit Packs generated (session)</span><span id="dash-a-packs">—</span></li>
+                  <li><span>SOP playbook</span><span id="dash-a-sop">—</span></li>
+                  <li><span>Training playbook</span><span id="dash-a-train">—</span></li>
+                  <li><span>Daily / weekly checklists</span><span id="dash-a-chk">—</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="inspection-readiness-viewer" class="playbook-viewer ops-dash-viewer" aria-hidden="true">
+        <div class="playbook-toolbar">
+          <button type="button" class="playbook-tool-btn primary" onclick="closeInspectionReadiness()">← Back to chat</button>
+          <span class="playbook-toolbar-title">Inspection Readiness</span>
+          <span class="ir-badge-hint">FDA BIMO, 21 CFR (11/50/312), ICH E6(R2), Sponsor Inspection Framework (internal reference)</span>
+          <div class="playbook-tool-actions">
+            <button type="button" class="playbook-tool-btn primary" onclick="runInspectionCheck()">Run Inspection Check</button>
+          </div>
+        </div>
+        <div class="dash-scroll">
+          <div class="msg-bubble playbook-doc" style="max-width:100%">
+            <p class="ir-copy">Identify gaps early and strengthen site readiness. Turn documentation, training, and oversight into a defensible readiness system.</p>
+            <div id="ir-error" class="cert-fail" style="display:none;margin-bottom:12px"></div>
+            <div class="ir-tabs" role="tablist">
+              <button type="button" class="ir-tab active" data-ir-tab="overview" onclick="irSwitchTab('overview')">Overview</button>
+              <button type="button" class="ir-tab" data-ir-tab="score" onclick="irSwitchTab('score')">Readiness Score</button>
+              <button type="button" class="ir-tab" data-ir-tab="documents" onclick="irSwitchTab('documents')">Documents</button>
+              <button type="button" class="ir-tab" data-ir-tab="sim" onclick="irSwitchTab('sim')">Inspection Simulation</button>
+              <button type="button" class="ir-tab" data-ir-tab="pack" onclick="irSwitchTab('pack')">Audit Defense Pack</button>
+              <button type="button" class="ir-tab" data-ir-tab="sources" onclick="irSwitchTab('sources')">Sources &amp; Standards</button>
+            </div>
+            <div id="ir-panel-overview" class="ir-panel active">
+              <div class="ir-kpi">
+                <div class="ir-kpi-card"><div class="ir-kpi-val" id="ir-kpi-score">—</div><div class="ir-kpi-lbl">Overall score</div></div>
+                <div class="ir-kpi-card"><div class="ir-kpi-val" id="ir-kpi-risk">—</div><div class="ir-kpi-lbl">Risk level</div></div>
+                <div class="ir-kpi-card"><div class="ir-kpi-val" id="ir-kpi-critical">—</div><div class="ir-kpi-lbl">Critical findings</div></div>
+                <div class="ir-kpi-card"><div class="ir-kpi-val" id="ir-kpi-major">—</div><div class="ir-kpi-lbl">Major findings</div></div>
+              </div>
+              <button type="button" class="export-btn" style="max-width:280px;margin-bottom:10px" onclick="runInspectionCheck()">Run Inspection Check</button>
+              <div class="dash-card-title" style="margin-top:16px;margin-bottom:8px;font-size:13px">Inspection risk drivers</div>
+              <ul id="ir-risk-drivers" class="ir-copy" style="font-size:12px;margin:0 0 12px 1.1em;padding:0;color:var(--text2)"></ul>
+              <div class="dash-card-title" style="margin-bottom:8px;font-size:13px">Immediate attention required</div>
+              <ul id="ir-immediate-attention" class="ir-copy" style="font-size:12px;margin:0 0 0 1.1em;padding:0;color:var(--text2)"></ul>
+              <p class="ir-copy" style="font-size:11px;margin-top:12px">Prepare your team, documents, and answers in one place. Session state syncs to the server while it runs.</p>
+            </div>
+            <div id="ir-panel-score" class="ir-panel">
+              <div class="dash-card-title" style="margin-bottom:12px">Scores &amp; findings</div>
+              <p id="ir-score-summary" class="ir-copy"></p>
+              <div id="ir-findings-list"></div>
+            </div>
+            <div id="ir-panel-documents" class="ir-panel">
+              <p class="ir-copy">Operational document matrix (manual status; no file parsing). Track expected regulatory artifacts against upload/readiness. Use sidebar uploads separately for protocol review workflow.</p>
+              <div id="ir-doc-matrix-host" class="ir-doc-wrap"></div>
+            </div>
+            <div id="ir-panel-sim" class="ir-panel">
+              <label class="visit-log-label">Role filter</label>
+              <select id="ir-sim-role" class="cert-field" style="max-width:200px;margin-bottom:12px" onchange="irRenderSimulation()">
+                <option value="">All</option>
+                <option value="PI">PI</option>
+                <option value="CRC">CRC</option>
+                <option value="Coordinator">Coordinator</option>
+              </select>
+              <div id="ir-sim-list"></div>
+            </div>
+            <div id="ir-panel-pack" class="ir-panel">
+              <p class="ir-copy">Export structured inspection readiness pack (Markdown). Run <b>Run Inspection Check</b> first.</p>
+              <button type="button" class="export-btn" onclick="exportInspectionPack()">Generate inspection pack (Markdown)</button>
+              <p class="ir-copy" style="font-size:11px;margin-top:12px">Protocol-based <b>Audit Defense Pack</b> (Markdown) remains in Protocol Review mode when <code>protocol_data</code> is available.</p>
+            </div>
+            <div id="ir-panel-sources" class="ir-panel">
+              <div id="ir-sources-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area" id="chat-input-area">
+      <div class="input-box">
+        <textarea id="chat-input" rows="1" placeholder="Ask a question or request a review…"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" title="Send">➤</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="panel-right">
+    <div class="panel-section">
+      <div class="panel-label" id="issue-panel-title">Detected issues (contract)</div>
+      <div class="issue-list" id="issue-list">
+        <div class="issues-empty" id="issues-empty-msg">Contract issues will appear here after analysis</div>
+      </div>
+    </div>
+
+    <div class="panel-section protocol-audit-export" id="protocol-audit-export-section" style="display: none;">
+      <div class="panel-label">Audit Defense Pack</div>
+      <p class="audit-export-hint" id="audit-export-hint">Run Protocol Review first to generate an Audit Defense Pack.</p>
+      <button type="button" class="export-btn" id="audit-pack-export-btn" disabled onclick="generateAuditDefensePack()">Generate Audit Defense Pack</button>
+    </div>
+
+    <div class="panel-section visit-log-section" id="visit-log-section" style="display: none;">
+      <div class="panel-label">Visit Log</div>
+      <p class="audit-export-hint">Minimal operational note after a visit—does not replace source documents or the EDC.</p>
+      <div class="visit-log-form">
+        <label class="visit-log-label" for="visit-log-protocol">Protocol</label>
+        <input type="text" class="cert-field visit-log-input" id="visit-log-protocol" placeholder="Auto-filled from upload or type"/>
+
+        <label class="visit-log-label" for="visit-log-visit-type">Visit type</label>
+        <input type="text" class="cert-field visit-log-input" id="visit-log-visit-type" placeholder="e.g. Screening, Day 1, Follow-up"/>
+
+        <label class="visit-log-label" for="visit-log-date">Date</label>
+        <input type="date" class="cert-field visit-log-input visit-log-date" id="visit-log-date"/>
+
+        <div class="visit-log-check-row">
+          <label><input type="checkbox" id="visit-log-completed"/> Completed</label>
+          <label><input type="checkbox" id="visit-log-verified"/> Verified</label>
+        </div>
+
+        <label class="visit-log-label" for="visit-log-crc">CRC name</label>
+        <input type="text" class="cert-field visit-log-input" id="visit-log-crc" placeholder="Coordinator name"/>
+
+        <label class="visit-log-label" for="visit-log-notes">Notes (optional)</label>
+        <textarea class="cert-field visit-log-input" id="visit-log-notes" rows="2" placeholder="Optional"></textarea>
+
+        <button type="button" class="export-btn" style="margin-top:6px" onclick="saveVisitLog()">Save Visit Record</button>
+        <div class="visit-log-confirm" id="visit-log-confirm" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-label">Safety disclaimer</div>
+      <div class="disclaimer-block">
+        <div class="disclaimer-title">CRITICAL NOTICE</div>
+        <div class="disclaimer-text">
+          1. <b>Not professional advice:</b> This app is an AI assistant and <b>does not</b> replace legal counsel or formal IRB review.<br>
+          2. <b>Privacy:</b> Processing is in-memory only. We do not store files. <b>Do not enter Protected Health Information (PHI).</b><br>
+          3. <b>Validation:</b> All generated material must be reviewed before signing or official submission.
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="ir-source-modal" class="ir-modal-overlay" onclick="if(event.target===this)closeIrSourceModal()" aria-hidden="true">
+  <div class="ir-modal" role="dialog" aria-labelledby="ir-modal-title" onclick="event.stopPropagation()">
+    <h4 id="ir-modal-title"></h4>
+    <p id="ir-modal-excerpt"></p>
+    <div class="ir-type" id="ir-modal-type"></div>
+    <div class="ir-type" id="ir-modal-cred" style="margin-top:4px"></div>
+    <button type="button" class="playbook-tool-btn primary ir-modal-close" onclick="closeIrSourceModal()">Close</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+  mode: 'contract',
+  messages: [],
+  docs: [], // Array of { name, text }
+  queryCount: 0,
+  issueCount: 0,
+  protocol_data: null, // response.protocol_data from last successful Protocol Review (export only; no re-analysis)
+  playbookId: null
+};
+
+// ── System prompts (match scripts/cliniq_backend.py PROMPTS) ──
+const PROMPTS = {
+  contract: `You are a senior attorney specializing in clinical trial agreements (CTAs) with over 15 years of experience exclusively representing independent research sites, physician practices, and small site networks in the United States.
+
+You have deep expertise in:
+- 21 CFR Parts 11, 50, 54, 56, 312
+- ICH E6(R3) Good Clinical Practice
+- Standard negotiation practices between sites and large sponsors/CROs
+- Financial and operational risks that most affect small independent sites
+
+Task:
+Analyze the full clinical trial contract provided.
+
+First, think step-by-step internally:
+1. Identify the most critical clauses for an independent research site (indemnification, subject injury, intellectual property/data ownership, publication rights, payment terms and timelines, termination, insurance, governing law).
+2. Assess the risk level for the site (High / Medium / Low).
+3. Compare against site-friendly industry standards.
+
+Then, respond EXACTLY in this format:
+
+### Executive Summary
+[3-5 clear sentences giving an overall assessment of the contract from the site's perspective. State whether it is favorable, risky, or neutral.]
+
+### Issues Detected (ordered by severity)
+**[CRITICAL]** Brief issue name
+→ Clear description of the problem and why it is risky for the site
+→ Potential impact
+→ Suggested negotiation language: "Exact recommended text"
+
+**[MODERATE]** ...
+**[MINOR]** ...
+
+### Contract Strengths
+[List any clauses that are well-written or favorable to the site]
+
+### Recommended Next Steps
+- Numbered list of concrete, prioritized actions (negotiation points, legal review, etc.)
+
+Always end with:
+⚠️ This analysis is for support purposes only. All outputs must be reviewed and validated by your specialized clinical research legal counsel before signing or negotiating. It does not replace personalized legal advice.`,
+
+  irb: `You are a senior IRB submission specialist with extensive experience preparing documents for both local and central IRBs (WCG, Advarra, Copernicus, etc.) in the United States.
+
+Your task is to generate high-quality drafts based on the protocol or study description provided.
+
+Rules:
+- Use clear, simple language at an 8th-grade reading level for participants.
+- Be accurate, neutral, and ethical.
+- Include all required elements according to 21 CFR 50.25 and 45 CFR 46 (Common Rule).
+
+For Informed Consent Forms (ICF), always include these sections:
+- Purpose of the study
+- Procedures (what will happen and duration)
+- Possible risks and discomforts
+- Possible benefits (be realistic)
+- Alternative procedures or treatments
+- Confidentiality and data protection
+- Compensation and medical treatment for injury
+- Contacts for questions and rights
+- Voluntary participation and right to withdraw
+
+Respond exactly in this format:
+
+### Document Type
+[Example: Draft Informed Consent Form]
+
+### Full Draft
+[Complete, well-formatted text ready for review]
+
+### Notes for IRB / Site
+- Points that need customization or special attention
+- Potential questions the IRB might raise
+
+Always end with:
+**This is an AI-generated draft for review only. It must not be used without final approval from the appropriate IRB and legal review.**`,
+
+  qa: `You are a senior regulatory expert in clinical research with deep knowledge of U.S. FDA regulations and ICH guidelines.
+
+Key knowledge base:
+- 21 CFR Parts 11, 50, 54, 56, 312, 314, 600
+- ICH E6(R3), E8(R1), E9, E10
+- Common Rule (45 CFR 46)
+- Current FDA guidance documents (2024-2026)
+
+Response Rules:
+1. Give a direct, clear answer first.
+2. Cite the exact regulation or guidance (e.g., "According to 21 CFR 312.60...").
+3. Provide practical context for small independent research sites.
+4. If there is regulatory ambiguity or gray area, clearly state it.
+5. Offer practical recommendations when appropriate.
+
+If you are not 100% certain: "I recommend consulting with a regulatory expert or directly with the FDA/IRB."`,
+
+  compare: `You are an expert in comparative analysis of clinical trial contracts.
+
+Task:
+Compare Version 1 and Version 2 of the contract provided.
+
+Respond exactly in this format:
+
+### Material / Critical Changes
+- List each significant change (indemnification, IP, publication rights, payments, termination, etc.)
+- Indicate whether the change is favorable, unfavorable, or neutral for the research site
+- Provide suggested negotiation language if unfavorable
+
+### Minor or Editorial Changes
+[List them]
+
+### Overall Assessment
+- Is the new version better or worse for the site overall?
+- Key points that must be negotiated
+- Final recommendation: Sign as is, Negotiate, or Reject
+
+Be objective and always prioritize the interests and protection of the independent research site.`,
+
+  /* Protocol Review: server returns JSON + markdown; this prompt is not sent to the model for protocol mode. */
+  protocol: '[Protocol Review: structured JSON on server — send mode: protocol in /api/chat]'
+};
+
+function setMode(mode, btn) {
+  closePlaybookViewer();
+  closeCertificationViewer();
+  closeOperationsDashboard();
+  closeInspectionReadiness();
+  state.mode = mode;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const placeholders = {
+    contract: 'Ask about the contract or request a full review...',
+    irb: 'Paste protocol details or request an ICF draft...',
+    qa: 'What does 21 CFR Part 11 require...?',
+    compare: 'Upload two documents, then press Enter or type instructions...',
+    protocol: 'Upload the protocol—get risks, actionable checklists, and this-week priorities...'
+  };
+  document.getElementById('chat-input').placeholder = placeholders[mode] || placeholders.contract;
+
+  let panelTitle = 'Detected issues';
+  let emptyMsg = 'Active in Contract and Protocol Review modes';
+  if (mode === 'protocol') {
+    panelTitle = 'Protocol risks & checklist';
+    emptyMsg = 'Risks, checklist, and priorities will appear here after analysis';
+  } else if (mode === 'contract') {
+    panelTitle = 'Detected issues (contract)';
+    emptyMsg = 'Contract issues will appear here after analysis';
+  }
+  const titleEl = document.getElementById('issue-panel-title');
+  if (titleEl) titleEl.textContent = panelTitle;
+
+  const list = document.getElementById('issue-list');
+  if (list) {
+    list.innerHTML = '';
+    const empty = document.createElement('div');
+    empty.className = 'issues-empty';
+    empty.id = 'issues-empty-msg';
+    empty.textContent = emptyMsg;
+    list.appendChild(empty);
+  }
+  syncProtocolAuditExportUI();
+  syncVisitLogSection();
+}
+
+function syncVisitLogSection() {
+  const sec = document.getElementById('visit-log-section');
+  if (!sec) return;
+  if (state.mode !== 'protocol') {
+    sec.style.display = 'none';
+    return;
+  }
+  sec.style.display = 'block';
+  prefillVisitLogDefaults();
+}
+
+function prefillVisitLogDefaults() {
+  const proto = document.getElementById('visit-log-protocol');
+  if (proto && !proto.value.trim() && state.docs[0] && state.docs[0].name) {
+    proto.value = state.docs[0].name;
+  }
+  const dEl = document.getElementById('visit-log-date');
+  if (dEl && !dEl.value) {
+    const t = new Date();
+    const y = t.getFullYear();
+    const m = String(t.getMonth() + 1).padStart(2, '0');
+    const day = String(t.getDate()).padStart(2, '0');
+    dEl.value = y + '-' + m + '-' + day;
+  }
+}
+
+let visitLogConfirmTimer = null;
+async function saveVisitLog() {
+  const confirmEl = document.getElementById('visit-log-confirm');
+  const body = {
+    protocol: (document.getElementById('visit-log-protocol') || {}).value || '',
+    visit_type: (document.getElementById('visit-log-visit-type') || {}).value || '',
+    date: (document.getElementById('visit-log-date') || {}).value || '',
+    completed: document.getElementById('visit-log-completed') && document.getElementById('visit-log-completed').checked,
+    verified: document.getElementById('visit-log-verified') && document.getElementById('visit-log-verified').checked,
+    crc: (document.getElementById('visit-log-crc') || {}).value || '',
+    notes: (document.getElementById('visit-log-notes') || {}).value || ''
+  };
+  try {
+    const res = await fetch('/api/visit-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json().catch(function () { return {}; });
+    if (!res.ok) {
+      addMessage('system', '❌ Visit log save failed: ' + (data.detail || res.statusText));
+      return;
+    }
+    if (confirmEl) {
+      confirmEl.style.display = 'block';
+      confirmEl.textContent = data.message || 'Visit record saved.';
+    }
+    addMessage('system', '✅ ' + (data.message || 'Visit record saved.'));
+    if (visitLogConfirmTimer) clearTimeout(visitLogConfirmTimer);
+    visitLogConfirmTimer = setTimeout(function () {
+      if (confirmEl) { confirmEl.style.display = 'none'; confirmEl.textContent = ''; }
+    }, 5000);
+  } catch (e) {
+    addMessage('system', '❌ Visit log request failed');
+    console.error(e);
+  }
+}
+
+function syncProtocolAuditExportUI() {
+  const sec = document.getElementById('protocol-audit-export-section');
+  const btn = document.getElementById('audit-pack-export-btn');
+  const hint = document.getElementById('audit-export-hint');
+  if (!sec || !btn) return;
+  if (state.mode !== 'protocol') {
+    sec.style.display = 'none';
+    return;
+  }
+  sec.style.display = 'block';
+  btn.disabled = !state.protocol_data;
+  if (hint) {
+    hint.textContent = state.protocol_data
+      ? 'Uses the structured Protocol Review above — no additional analysis.'
+      : 'Run Protocol Review first to generate an Audit Defense Pack.';
+  }
+}
+
+async function generateAuditDefensePack() {
+  if (!state.protocol_data) return;
+  const btn = document.getElementById('audit-pack-export-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch('/api/export/audit-pack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        protocol_data: state.protocol_data,
+        protocol_name: (state.docs[0] && state.docs[0].name) ? state.docs[0].name : 'Protocol',
+        site_name: ''
+      })
+    });
+    if (!res.ok) {
+      let msg = 'Generate failed';
+      try {
+        const j = await res.json();
+        if (j.detail) msg = typeof j.detail === 'string' ? j.detail : JSON.stringify(j.detail);
+      } catch (e) { /* ignore */ }
+      throw new Error(msg);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ClinIQ-Audit-Defense-Pack.md';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    addMessage('system', '✅ Audit Defense Pack downloaded.');
+  } catch (err) {
+    addMessage('system', '❌ ' + (err.message || 'Generate failed'));
+    console.error(err);
+  } finally {
+    if (btn) btn.disabled = !state.protocol_data;
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('drag');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+  e.target.value = '';
+}
+
+async function processFile(file) {
+  if (state.mode === 'compare' && state.docs.length >= 2) {
+    addMessage('system', '❌ Compare mode accepts at most 2 documents.');
+    return;
+  }
+  if (state.mode !== 'compare' && state.docs.length >= 1) {
+    // Override existing doc if not compare mode
+    state.docs = [];
+    document.getElementById('file-chips').innerHTML = '';
+  }
+
+  addMessage('system', \`Processing \${file.name} (in-memory)...\`);
+  const formData = new FormData();
+  formData.append("file", file);
+  
+  try {
+    const res = await fetch("/api/upload", { method: "POST", body: formData });
+    let data;
+    try { data = await res.json(); } catch(e) { throw new Error("Backend response error."); }
+    
+    if (!res.ok) throw new Error(data.detail || "Upload failed.");
+    if (!data.success) throw new Error("Unknown parse error.");
+    
+    state.docs.push({ name: data.filename, text: data.text });
+    renderFileChips();
+    addMessage('system', \`✅ File loaded in memory: \${data.filename}\`);
+    if (state.mode === 'protocol') {
+      prefillVisitLogDefaults();
+    }
+    
+  } catch (err) {
+    addMessage('system', \`❌ Error: \${err.message}\`);
+  }
+}
+
+function renderFileChips() {
+  const chips = document.getElementById('file-chips');
+  chips.innerHTML = state.docs.map((d, i) => \`
+    <div class="file-chip">
+      <span class="file-chip-icon">📄</span>
+      <span class="file-chip-name">\${d.name}</span>
+      <button class="file-chip-remove" onclick="removeFile(\${i})">×</button>
+    </div>\`).join('');
+}
+
+function removeFile(index) {
+  state.docs.splice(index, 1);
+  renderFileChips();
+}
+
+function useSuggestion(btn) {
+  const text = btn.querySelector('.suggestion-label').nextSibling.textContent.trim();
+  const input = document.getElementById('chat-input');
+  input.value = text;
+  autoResize(input);
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text && state.docs.length === 0) return;
+
+  const welcome = document.getElementById('welcome');
+  if (welcome) welcome.remove();
+
+  if (text) addMessage('user', text);
+  input.value = ''; input.style.height = 'auto';
+
+  if (state.mode === 'compare' && state.docs.length < 2) {
+    addMessage('system', '⚠️ Upload two documents to use Compare mode.');
+    return;
+  }
+
+  addToHistory(text || (state.mode === 'compare' ? 'Analyzing differences...' : 'Document review'));
+  state.queryCount++;
+
+  let userContent = text || "Perform your primary analysis on the uploaded documents.";
+  
+  if (state.docs.length > 0) {
+    let docContext = state.docs.map((d, i) => \`--- DOC \${i+1}: \${d.name} ---\\n\${d.text.substring(0, 15000)}\`).join('\\n\\n');
+    userContent = \`DOCUMENTS PROVIDED:\\n\${docContext}\\n\\nUSER INSTRUCTIONS:\\n\${userContent}\`;
+  }
+
+  const apiMessages = state.messages.filter(m => m.role !== 'system').slice(-6)
+    .concat([{ role: 'user', content: userContent }]);
+
+  const typingId = showTyping();
+
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: PROMPTS[state.mode], messages: apiMessages, mode: state.mode })
+    });
+    
+    removeTyping(typingId);
+    let data;
+    try { data = await res.json(); } catch(e) { throw new Error("Invalid server response."); }
+    
+    if (!res.ok) throw new Error(data.detail || "Server error.");
+    if (!data.success) throw new Error(data.detail || "Anthropic API error.");
+    
+    addMessage('assistant', data.reply);
+    state.messages.push({ role: 'user', content: text });
+    state.messages.push({ role: 'assistant', content: data.reply });
+
+    if (state.mode === 'protocol') {
+      if (data.protocol_data) {
+        state.protocol_data = data.protocol_data;
+        const pd = data.protocol_data;
+        const n = (pd.critical_risks || []).length + (pd.medium_risks || []).length + (pd.low_risks || []).length;
+        if (n) state.issueCount += n;
+        renderProtocolPanelFromJSON(pd);
+      } else {
+        state.protocol_data = null;
+        const issues = extractMarkdownProtocolIssues(data.reply);
+        if (issues.length) state.issueCount += issues.length;
+        renderProtocolRightPanel(issues, data.reply, true);
+      }
+      syncProtocolAuditExportUI();
+    } else if (state.mode === 'contract') {
+      parseIssues(data.reply);
+    }
+
+  } catch (err) {
+    removeTyping(typingId);
+    addMessage('system', \`❌ API error: \${err.message}\`);
+    console.error(err);
+  }
+}
+
+function getChatThreadRoot() {
+  return document.getElementById('chat-thread-container') || document.getElementById('chat-area');
+}
+
+function addMessage(role, text) {
+  const area = getChatThreadRoot();
+  const div = document.createElement('div');
+  div.className = \`message \${role === 'user' ? 'user' : 'assistant'}\`;
+  const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const rendered = role === 'user' ? escapeHtml(text) : renderMarkdown(text);
+  const who = role === 'user' ? 'You' : role === 'assistant' ? 'ClinIQ' : 'System';
+  div.innerHTML = \`<div class="msg-bubble">\${rendered}</div><div class="msg-meta">\${who} · \${time}</div>\`;
+  area.appendChild(div);
+  const scrollEl = document.getElementById('chat-area');
+  if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+}
+
+function escapeHtml(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function renderMarkdown(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+    .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+    .replace(/\*\*\[CRITICAL RISK\]\*\*/gi, '<span style="color:var(--danger);font-weight:700">[CRITICAL RISK]</span>')
+    .replace(/\*\*\[MEDIUM RISK\]\*\*/gi, '<span style="color:var(--warn);font-weight:700">[MEDIUM RISK]</span>')
+    .replace(/\*\*\[LOW RISK\]\*\*/gi, '<span style="color:var(--ok);font-weight:700">[LOW RISK]</span>')
+    .replace(/\*\*\[CRITICAL\]\*\*/gi, '<span style="color:var(--danger);font-weight:700">[CRITICAL]</span>')
+    .replace(/\*\*\[MODERATE\]\*\*/gi, '<span style="color:var(--warn);font-weight:700">[MODERATE]</span>')
+    .replace(/\*\*\[MINOR\]\*\*/gi, '<span style="color:var(--ok);font-weight:700">[MINOR]</span>')
+    .replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>')
+    .replace(/\\`([^\\`]+)\\`/g, '<code>$1</code>')
+    .replace(/\\[CRITICAL\\]/gi, '<span style="color:var(--danger);font-weight:700">[CRITICAL]</span>')
+    .replace(/\\[CRÍTICO\\]/gi, '<span style="color:var(--danger);font-weight:700">[CRÍTICO]</span>')
+    .replace(/\\[MODERATE\\]/gi, '<span style="color:var(--warn);font-weight:700">[MODERATE]</span>')
+    .replace(/\\[MODERADO\\]/gi, '<span style="color:var(--warn);font-weight:700">[MODERADO]</span>')
+    .replace(/\\[MINOR\\]/gi, '<span style="color:var(--ok);font-weight:700">[MINOR]</span>')
+    .replace(/\\[MENOR\\]/gi, '<span style="color:var(--ok);font-weight:700">[MENOR]</span>')
+    .replace(/\\n/g, '<br/>');
+}
+
+let typeId = 0;
+function showTyping() {
+  const id = 'typing-' + (++typeId);
+  const div = document.createElement('div'); div.className = 'message assistant'; div.id = id;
+  div.innerHTML = '<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  getChatThreadRoot().appendChild(div);
+  const scrollEl = document.getElementById('chat-area');
+  if (scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
+  return id;
+}
+function removeTyping(id) { const el = document.getElementById(id); if (el) el.remove(); }
+
+function extractMarkdownSection(body, needle) {
+  const lines = body.split('\n');
+  let start = -1;
+  for (let i = 0; i < lines.length; i++) {
+    const t = lines[i].trim();
+    if (t.startsWith('###') && t.includes(needle)) {
+      start = i + 1;
+      break;
+    }
+  }
+  if (start < 0) return '';
+  const out = [];
+  for (let j = start; j < lines.length; j++) {
+    const t = lines[j].trim();
+    if (t.startsWith('###') && j > start) break;
+    out.push(lines[j]);
+  }
+  return out.join('\n').trim();
+}
+
+function formatProtocolChecklistSection(raw) {
+  if (!raw) return '';
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  let html = '';
+  const skip = /^(Each item must be:|Short|Actionable|Verifiable|Use this format|one item per line)/i;
+  for (const l of lines) {
+    if (skip.test(l) || l === '---') continue;
+    if (/^(Pre-visit|During visit|Post-visit)\b/i.test(l) && l.length < 90) {
+      html += '<div class="protocol-mini-head">' + escapeHtml(l) + '</div>';
+      continue;
+    }
+    if (l.startsWith('✔') || l.startsWith('-') || l.startsWith('•') || /^\d+\.\s/.test(l)) {
+      const t = l.replace(/^[✔•-]\s*/, '').replace(/^\d+\.\s+/, '').trim();
+      if (t) html += '<div class="checklist-row"><span class="checklist-mark">✔</span><span>' + escapeHtml(t) + '</span></div>';
+    }
+  }
+  return html;
+}
+
+function formatProtocolBulletSection(raw) {
+  if (!raw) return '';
+  return raw.split('\n').map(l => l.trim()).filter(l =>
+    l.startsWith('-') || l.startsWith('•') || l.startsWith('✔') || /^\d+\.\s/.test(l)
+  ).map(l => {
+    const t = l.replace(/^[-•✔]\s*/, '').replace(/^\d+\.\s+/, '').trim();
+    return t ? '<div class="protocol-li">' + escapeHtml(t) + '</div>' : '';
+  }).join('');
+}
+
+function formatProtocolSourceHTML(sr) {
+  if (!sr || typeof sr !== 'object') return '';
+  const sec = String(sr.section || '').trim();
+  const desc = String(sr.description || '').trim();
+  if (!sec && !desc) return '';
+  return '<div class="protocol-source"><b>Source</b> · ' + escapeHtml(sec) + ' — ' + escapeHtml(desc) + '</div>';
+}
+
+function normalizeChecklistEntry(x) {
+  if (typeof x === 'string') {
+    return {
+      item: x,
+      verification_method: 'CRA/auditor reviews source documents and dated records.',
+      frequency: 'per visit',
+      responsible_role: 'CRC',
+      source_reference: { section: '', description: '' }
+    };
+  }
+  if (x && typeof x === 'object') {
+    return {
+      item: String(x.item || ''),
+      verification_method: String(x.verification_method || 'Verify via source documentation review.'),
+      frequency: String(x.frequency || 'per visit'),
+      responsible_role: String(x.responsible_role || 'CRC'),
+      source_reference: x.source_reference || {}
+    };
+  }
+  return { item: '', verification_method: '', frequency: '', responsible_role: '', source_reference: {} };
+}
+
+function normalizeActionEntry(x) {
+  if (typeof x === 'string') {
+    return {
+      action: x,
+      verification_method: 'Document in study file or CTMS.',
+      frequency: 'this week',
+      responsible_role: 'CRC',
+      source_reference: { section: '', description: '' }
+    };
+  }
+  if (x && typeof x === 'object') {
+    return {
+      action: String(x.action || ''),
+      verification_method: String(x.verification_method || 'Document in study file or CTMS.'),
+      frequency: String(x.frequency || 'this week'),
+      responsible_role: String(x.responsible_role || 'CRC'),
+      source_reference: x.source_reference || {}
+    };
+  }
+  return { action: '', verification_method: '', frequency: '', responsible_role: '', source_reference: {} };
+}
+
+function normalizeFlagEntry(x) {
+  if (typeof x === 'string') {
+    return {
+      flag: x,
+      why_flagged: '',
+      evidence_expected: '',
+      source_reference: { section: '', description: '' }
+    };
+  }
+  if (x && typeof x === 'object') {
+    return {
+      flag: String(x.flag || ''),
+      why_flagged: String(x.why_flagged || ''),
+      evidence_expected: String(x.evidence_expected || ''),
+      source_reference: x.source_reference || {}
+    };
+  }
+  return { flag: '', why_flagged: '', evidence_expected: '', source_reference: {} };
+}
+
+function extractMarkdownProtocolIssues(text) {
+  const issues = [];
+  const protoMap = { 'CRITICAL RISK': 'critical', 'MEDIUM RISK': 'moderate', 'LOW RISK': 'minor' };
+  const lines = text.split('\n');
+  for (const raw of lines) {
+    const line = raw.trim();
+    const mdProto = line.match(/^\*\*\[(CRITICAL RISK|MEDIUM RISK|LOW RISK)\]\*\*\s*(.*)$/i);
+    if (mdProto) {
+      const level = protoMap[mdProto[1].toUpperCase()];
+      const title = (mdProto[2] || '').trim();
+      if (level && title) issues.push({ level, text: title });
+    }
+  }
+  return issues;
+}
+
+function renderProtocolPanelFromJSON(pd) {
+  const list = document.getElementById('issue-list');
+  if (!pd || typeof pd !== 'object') {
+    list.innerHTML = '<div class="issues-empty" id="issues-empty-msg">Invalid protocol data</div>';
+    return;
+  }
+  const ov = pd.overview || {};
+  let html = '';
+
+  html += '<div class="protocol-block"><div class="protocol-block-title">📋 Protocol overview</div>';
+  html += '<div class="issue-card minor"><div class="issue-text">';
+  html += '<div><b>Phase:</b> ' + escapeHtml(String(ov.phase || '')) + '</div>';
+  html += '<div><b>Indication:</b> ' + escapeHtml(String(ov.indication || '')) + '</div>';
+  html += '<div><b>Complexity:</b> ' + escapeHtml(String(ov.complexity || '')) + ' · <b>Site burden:</b> ' + escapeHtml(String(ov.site_burden || '')) + '</div>';
+  html += '<div style="margin-top:8px">' + escapeHtml(String(ov.summary || '')) + '</div>';
+  html += '</div></div></div>';
+
+  function riskBlockJSON(emoji, title, levelClass, arr) {
+    if (!arr || !arr.length) return '';
+    let inner = '';
+    arr.forEach(r => {
+      const impact = String(r.audit_impact || r.why_high_risk || '').trim();
+      const like = String(r.likelihood || 'medium');
+      inner += '<div class="issue-card ' + levelClass + '">';
+      inner += '<div class="issue-tag">' + escapeHtml(String(r.title || '')) + '</div>';
+      inner += '<div class="protocol-meta"><b>Likelihood</b> · ' + escapeHtml(like) + '</div>';
+      inner += '<div class="issue-text" style="margin-top:6px"><b>Audit impact</b><br/>' + escapeHtml(impact) + '</div>';
+      if ((r.common_deviations || []).length || (r.prevention || []).length) {
+        inner += '<div class="protocol-risk-detail"><b>Additional context</b><ul style="margin:4px 0 0 16px;padding:0">';
+        (r.common_deviations || []).forEach(d => { inner += '<li>' + escapeHtml(String(d)) + '</li>'; });
+        (r.prevention || []).forEach(p => { inner += '<li>' + escapeHtml(String(p)) + '</li>'; });
+        inner += '</ul></div>';
+      }
+      inner += formatProtocolSourceHTML(r.source_reference);
+      inner += '</div>';
+    });
+    return '<div class="protocol-block"><div class="protocol-block-title">' + emoji + ' ' + title + '</div>' + inner + '</div>';
+  }
+
+  html += riskBlockJSON('🔴', 'Critical risk', 'critical', pd.critical_risks);
+  html += riskBlockJSON('🟡', 'Medium risk', 'moderate', pd.medium_risks);
+  html += riskBlockJSON('🟢', 'Low risk', 'minor', pd.low_risks);
+
+  const ch = pd.checklist || {};
+  html += '<div class="protocol-block"><div class="protocol-block-title">✅ Checklist</div>';
+  html += '<div class="protocol-mini-head">Pre-visit</div>';
+  (ch.pre_visit || []).forEach(x => {
+    const row = normalizeChecklistEntry(x);
+    html += '<div class="checklist-row" style="flex-direction:column;align-items:stretch;gap:4px">';
+    html += '<div style="display:flex;gap:8px;align-items:flex-start"><span class="checklist-mark">✔</span><span>' + escapeHtml(row.item) + '</span></div>';
+    html += '<div class="protocol-meta"><b>Verify</b> · ' + escapeHtml(row.verification_method) + '</div>';
+    html += '<div class="protocol-meta"><b>Frequency</b> · ' + escapeHtml(row.frequency) + ' · <b>Role</b> · ' + escapeHtml(row.responsible_role) + '</div>';
+    html += formatProtocolSourceHTML(row.source_reference) || '<div class="protocol-source"><b>Source</b> · (not specified)</div>';
+    html += '</div>';
+  });
+  html += '<div class="protocol-mini-head">During visit</div>';
+  (ch.during_visit || []).forEach(x => {
+    const row = normalizeChecklistEntry(x);
+    html += '<div class="checklist-row" style="flex-direction:column;align-items:stretch;gap:4px">';
+    html += '<div style="display:flex;gap:8px;align-items:flex-start"><span class="checklist-mark">✔</span><span>' + escapeHtml(row.item) + '</span></div>';
+    html += '<div class="protocol-meta"><b>Verify</b> · ' + escapeHtml(row.verification_method) + '</div>';
+    html += '<div class="protocol-meta"><b>Frequency</b> · ' + escapeHtml(row.frequency) + ' · <b>Role</b> · ' + escapeHtml(row.responsible_role) + '</div>';
+    html += formatProtocolSourceHTML(row.source_reference) || '<div class="protocol-source"><b>Source</b> · (not specified)</div>';
+    html += '</div>';
+  });
+  html += '<div class="protocol-mini-head">Post-visit</div>';
+  (ch.post_visit || []).forEach(x => {
+    const row = normalizeChecklistEntry(x);
+    html += '<div class="checklist-row" style="flex-direction:column;align-items:stretch;gap:4px">';
+    html += '<div style="display:flex;gap:8px;align-items:flex-start"><span class="checklist-mark">✔</span><span>' + escapeHtml(row.item) + '</span></div>';
+    html += '<div class="protocol-meta"><b>Verify</b> · ' + escapeHtml(row.verification_method) + '</div>';
+    html += '<div class="protocol-meta"><b>Frequency</b> · ' + escapeHtml(row.frequency) + ' · <b>Role</b> · ' + escapeHtml(row.responsible_role) + '</div>';
+    html += formatProtocolSourceHTML(row.source_reference) || '<div class="protocol-source"><b>Source</b> · (not specified)</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="protocol-block"><div class="protocol-block-title">🎯 This week (priorities)</div>';
+  (pd.this_week_actions || []).forEach(x => {
+    const row = normalizeActionEntry(x);
+    html += '<div class="protocol-li" style="margin-bottom:10px"><b>' + escapeHtml(row.action) + '</b>';
+    html += '<div class="protocol-meta"><b>Verify</b> · ' + escapeHtml(row.verification_method) + '</div>';
+    html += '<div class="protocol-meta"><b>Frequency</b> · ' + escapeHtml(row.frequency) + ' · <b>Role</b> · ' + escapeHtml(row.responsible_role) + '</div>';
+    html += formatProtocolSourceHTML(row.source_reference) || '<div class="protocol-source"><b>Source</b> · (not specified)</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="protocol-block"><div class="protocol-block-title">🔎 CRA / audit red flags</div>';
+  (pd.audit_red_flags || []).forEach(x => {
+    const row = normalizeFlagEntry(x);
+    html += '<div class="protocol-li" style="margin-bottom:10px"><b>' + escapeHtml(row.flag) + '</b>';
+    html += '<div class="protocol-meta"><b>Why flagged</b> · ' + escapeHtml(row.why_flagged || '—') + '</div>';
+    html += '<div class="protocol-meta"><b>Evidence expected</b> · ' + escapeHtml(row.evidence_expected || '—') + '</div>';
+    html += formatProtocolSourceHTML(row.source_reference) || '<div class="protocol-source"><b>Source</b> · (not specified)</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+
+  list.innerHTML = html;
+}
+
+function renderProtocolRightPanel(issues, text, showFallbackNotice) {
+  const list = document.getElementById('issue-list');
+  const prefix = showFallbackNotice
+    ? '<div class="protocol-json-fallback-notice">Structured protocol view unavailable for this response.</div>'
+    : '';
+  const by = { critical: [], moderate: [], minor: [] };
+  issues.forEach(i => { if (by[i.level]) by[i.level].push(i); });
+
+  function riskBlock(emoji, label, level, arr) {
+    if (!arr.length) return '';
+    const inner = arr.map(t =>
+      '<div class="issue-card ' + level + '"><div class="issue-text">' + escapeHtml(t.text) + '</div></div>'
+    ).join('');
+    return '<div class="protocol-block"><div class="protocol-block-title">' + emoji + ' ' + label + '</div>' + inner + '</div>';
+  }
+
+  let html = '';
+  html += riskBlock('🔴', 'Critical risk', 'critical', by.critical);
+  html += riskBlock('🟡', 'Medium risk', 'moderate', by.moderate);
+  html += riskBlock('🟢', 'Low risk', 'minor', by.minor);
+
+  const checkHtml = formatProtocolChecklistSection(extractMarkdownSection(text, 'Daily Compliance Checklist'));
+  if (checkHtml) {
+    html += '<div class="protocol-block"><div class="protocol-block-title">✅ Checklist</div>' + checkHtml + '</div>';
+  }
+
+  const priHtml = formatProtocolBulletSection(extractMarkdownSection(text, 'Immediate Site Actions'));
+  if (priHtml) {
+    html += '<div class="protocol-block"><div class="protocol-block-title">🎯 This week (priorities)</div>' + priHtml + '</div>';
+  }
+
+  const redHtml = formatProtocolBulletSection(extractMarkdownSection(text, 'Red Flags for Monitors'));
+  if (redHtml) {
+    html += '<div class="protocol-block"><div class="protocol-block-title">🔎 CRA / audit red flags</div>' + redHtml + '</div>';
+  }
+
+  if (!html) {
+    list.innerHTML = prefix + '<div class="issues-empty" id="issues-empty-msg">Risks, checklist, and priorities will appear here after analysis</div>';
+    return;
+  }
+  list.innerHTML = prefix + html;
+}
+
+function parseIssues(text) {
+  const issues = [];
+  const severityMap = { CRITICAL: 'critical', MODERATE: 'moderate', MINOR: 'minor' };
+  const lines = text.split('\n');
+
+  const protoMap = { 'CRITICAL RISK': 'critical', 'MEDIUM RISK': 'moderate', 'LOW RISK': 'minor' };
+  for (const raw of lines) {
+    const line = raw.trim();
+    const mdProto = line.match(/^\*\*\[(CRITICAL RISK|MEDIUM RISK|LOW RISK)\]\*\*\s*(.*)$/i);
+    if (mdProto) {
+      const level = protoMap[mdProto[1].toUpperCase()];
+      const title = (mdProto[2] || '').trim();
+      if (level && title) issues.push({ level, text: title });
+      continue;
+    }
+    const md = line.match(/^\*\*\[(CRITICAL|MODERATE|MINOR)\]\*\*\s*(.*)$/i);
+    if (md) {
+      const level = severityMap[md[1].toUpperCase()];
+      const title = (md[2] || '').trim();
+      if (title) issues.push({ level, text: title });
+      continue;
+    }
+    let currentLevel = null;
+    if (line.includes('[CRÍTICO]') || line.includes('[CRITICAL]')) currentLevel = 'critical';
+    else if (line.includes('[MODERADO]') || line.includes('[MODERATE]')) currentLevel = 'moderate';
+    else if (line.includes('[MENOR]') || line.includes('[MINOR]')) currentLevel = 'minor';
+    if (currentLevel && /^Clause\/Topic:/i.test(line)) {
+      issues.push({ level: currentLevel, text: line.replace(/^Clause\/Topic:\s*/i, '').trim() });
+    }
+  }
+
+  if (issues.length > 0) {
+    state.issueCount += issues.length;
+    renderIssuesContract(issues);
+  }
+}
+
+function renderIssuesContract(issues) {
+  const list = document.getElementById('issue-list');
+  const labels = { critical: 'CRITICAL', moderate: 'MODERATE', minor: 'MINOR' };
+  const html = issues.map(i => \`
+    <div class="issue-card \${i.level}">
+      <div class="issue-tag">\${labels[i.level]}</div>
+      <div class="issue-text">\${escapeHtml(i.text)}</div>
+    </div>\`).join('');
+  if (list.querySelector('.issues-empty')) list.innerHTML = html;
+  else list.innerHTML = list.innerHTML + html;
+}
+
+function addToHistory(text) {
+  const list = document.getElementById('history-list');
+  if (list.querySelector('.history-empty')) list.innerHTML = '';
+  const div = document.createElement('div'); div.className = 'history-item';
+  div.textContent = text.substring(0,40) + (text.length>40?'...':'');
+  list.prepend(div);
+}
+
+const PLAYBOOKS = {
+  sop: {
+    title: 'SOP — Protocol Deviation Prevention',
+    filename: 'ClinIQ-Playbook-SOP-Protocol-Deviation-Prevention.md',
+    md: [
+      '# SOP — Protocol Deviation Prevention',
+      '',
+      '## 1. Purpose',
+      'Define how the research site prevents, detects, documents, and reports protocol deviations in alignment with ICH GCP, 21 CFR 312, the IRB-approved protocol, and sponsor/CRO expectations.',
+      '',
+      '## 2. Scope',
+      'Applies to all personnel with study tasks: Principal Investigator, Sub-Investigators, CRCs, pharmacy, laboratory, and delegates listed on the Delegation of Authority Log.',
+      '',
+      '## 3. Definitions',
+      '- **Protocol deviation:** Any change, divergence, or departure from the IRB-approved protocol not approved prospectively by sponsor/IRB as required.',
+      '- **Important deviation:** May affect subject safety/rights, data integrity, or regulatory compliance; typically reportable per sponsor and IRB policy.',
+      '',
+      '## 4. Prevention controls',
+      '- **Pre-study:** Feasibility review; visit windows vs clinic schedule; IP/storage; lab certification; recruitment pool vs inclusion/exclusion.',
+      '- **Training:** Protocol-specific training documented before first subject; refresh after amendments.',
+      '- **Source workflow:** Visit guides, worksheets, and EDC field help aligned to protocol section numbers.',
+      '- **QC:** Self-check by CRC; second review for eligibility and dosing per site SOP.',
+      '',
+      '## 5. Detection and contemporaneous documentation',
+      '- Compare conduct to current approved protocol and amendment(s) the same day when a variance is suspected.',
+      '- Document facts in source (date, time, staff, what occurred, clinical context) without altering existing entries.',
+      '',
+      '## 6. Classification and reporting',
+      '- Classify per sponsor manual (e.g., major/minor) and IRB policy.',
+      '- Submit to sponsor/CRO within required timelines; submit to IRB per local requirements.',
+      '- Link deviation to subject identifiers only in controlled systems; avoid unnecessary PHI in email.',
+      '',
+      '## 7. CAPA',
+      '- For recurring or important deviations: root cause, corrective/preventive actions, effectiveness check, training updates.',
+      '',
+      '## 8. Records retention',
+      '- Retain deviation logs, notifications, and correspondence per regulatory and contract retention.',
+      '',
+      '## 9. References',
+      '- ICH E6(R3) GCP; 21 CFR 312; IRB-approved protocol; sponsor monitoring plan.'
+    ].join('\n')
+  },
+  training: {
+    title: 'Training Module — Protocol execution & deviations',
+    filename: 'ClinIQ-Playbook-Training-Module.md',
+    md: [
+      '# Training Module — Protocol execution & deviations',
+      '',
+      '## Learning objectives',
+      '- Recognize protocol vs routine care vs deviation.',
+      '- Apply visit-window and eligibility rules at point of care.',
+      '- Execute correct documentation and escalation paths.',
+      '',
+      '## Core concepts',
+      '### Informed consent & ongoing rights',
+      '- Consent must be current; re-consent when amendments change risk or procedures materially.',
+      '',
+      '### Eligibility',
+      '- All inclusion/exclusion criteria must be met and verified in source before randomization or assignment.',
+      '',
+      '### Visit schedules and procedures',
+      '- Perform only protocol-required assessments within allowed windows unless prospectively approved.',
+      '',
+      '### Investigational product',
+      '- Dose, preparation, storage, accountability, and return per pharmacy SOP and protocol.',
+      '',
+      '### Safety reporting',
+      '- AE/SAE definitions, timelines, and sponsor/IRB notification per protocol and SOP.',
+      '',
+      '## When something goes wrong',
+      '1. **Stop** the activity that may violate protocol if subject safety is at risk.',
+      '2. **Notify** PI (or on-call coverage) immediately for safety-impacting events.',
+      '3. **Document** contemporaneously in source; open deviation record per site process.',
+      '4. **Report** to sponsor/IRB per timelines.',
+      '',
+      '## Competency check (discussion prompts)',
+      '- Where do you find visit windows for your study?',
+      '- What is an example of an important deviation for your therapeutic area?',
+      '- Who signs the delegation log for your tasks?',
+      '',
+      '## Sign-off',
+      '- Name: _______________  Role: _______________  Date: _______________',
+      '- Trainer: _______________  Date: _______________'
+    ].join('\n')
+  },
+  daily: {
+    title: 'Daily Operational Checklist',
+    filename: 'ClinIQ-Playbook-Daily-Operational-Checklist.md',
+    md: [
+      '# Daily Operational Checklist',
+      '',
+      '**Site:** __________________  **Study:** __________________  **Date:** __________________',
+      '',
+      '## Scheduling & visit prep',
+      '- [ ] Visits scheduled within protocol-permitted windows',
+      '- [ ] Required fasts/holds communicated to participant',
+      '- [ ] IP and supplies available for scheduled visits',
+      '- [ ] Lab kits/requisitions match visit requirements',
+      '',
+      '## Before participant contact',
+      '- [ ] Correct participant ID verified (two identifiers per SOP)',
+      '- [ ] Current IRB-approved consent on file',
+      '- [ ] Con meds and restrictions reviewed',
+      '',
+      '## During visit',
+      '- [ ] Assessments performed per SoA; results contemporaneously in source',
+      '- [ ] AE/SAE inquiries and documentation per SOP',
+      '- [ ] IP dosing/accountability entries complete same day',
+      '',
+      '## After visit',
+      '- [ ] EDC entered or query resolution assigned within site timeline',
+      '- [ ] Samples shipped or stored per manual (temp logs if required)',
+      '- [ ] Next visit scheduled within allowed window',
+      '',
+      '## End of day',
+      '- [ ] Outstanding queries triaged',
+      '- [ ] Deviations/safety lines escalated to PI if required',
+      '- [ ] Secure storage of documents and IP',
+      '',
+      '**Completed by:** __________________  **Signature / initials:** __________________'
+    ].join('\n')
+  },
+  weekly: {
+    title: 'Weekly Control Sheet',
+    filename: 'ClinIQ-Playbook-Weekly-Control-Sheet.md',
+    md: [
+      '# Weekly Control Sheet',
+      '',
+      '**Week ending:** __________________  **PI / designee:** __________________',
+      '',
+      '## Enrollment & screen failures',
+      '- Screened this week: _____',
+      '- Enrolled/randomized: _____',
+      '- Screen failures (reason summarized in source): _____',
+      '',
+      '## Protocol deviations',
+      '- New deviations logged: _____',
+      '- Important deviations reported to sponsor/IRB: complete ☐  N/A ☐',
+      '- Open CAPA items reviewed: ☐',
+      '',
+      '## IP & supplies',
+      '- IP accountability reconciled: ☐',
+      '- Temperature excursions (if any): documented ☐  N/A ☐',
+      '- Expiry/dating checks: ☐',
+      '',
+      '## Data quality',
+      '- EDC queries >14 days old: count _____  action taken: _____________',
+      '- SDV/monitoring responses due this week: complete ☐',
+      '',
+      '## Training & staff',
+      '- Delegation log current for active staff: ☐',
+      '- New/amendment training completed for affected staff: ☐  N/A ☐',
+      '',
+      '## Regulatory / IRB',
+      '- Expiring approvals or documents tracked: ☐',
+      '- Safety reports submitted within timelines: ☐  N/A ☐',
+      '',
+      '## Notes',
+      '________________________________________________________________',
+      '',
+      '**Review signature:** __________________  **Date:** __________________'
+    ].join('\n')
+  }
+};
+
+function closePlaybookViewer() {
+  state.playbookId = null;
+  document.querySelectorAll('.playbook-btn').forEach(b => b.classList.remove('active'));
+  const pv = document.getElementById('playbook-viewer');
+  const ct = document.getElementById('chat-thread-container');
+  const ia = document.getElementById('chat-input-area');
+  if (pv) {
+    pv.classList.remove('open');
+    pv.setAttribute('aria-hidden', 'true');
+  }
+  if (ct) ct.style.display = '';
+  if (ia) ia.style.display = '';
+  document.body.classList.remove('print-playbook-only');
+}
+
+
+var irState = { inspection_state: null, sources: [], simulation_questions: [], categories: [] };
+
+function closeInspectionReadiness() {
+  var v = document.getElementById("inspection-readiness-viewer");
+  if (v) { v.classList.remove("open"); v.setAttribute("aria-hidden", "true"); }
+  var ct = document.getElementById("chat-thread-container");
+  var ia = document.getElementById("chat-input-area");
+  if (ct) ct.style.display = "";
+  if (ia) ia.style.display = "";
+}
+
+async function openInspectionReadiness() {
+  closePlaybookViewer();
+  closeCertificationViewer();
+  closeOperationsDashboard();
+  state.playbookId = null;
+  document.querySelectorAll(".playbook-btn").forEach(function (b) { b.classList.remove("active"); });
+  var pv = document.getElementById("playbook-viewer");
+  if (pv) { pv.classList.remove("open"); pv.setAttribute("aria-hidden", "true"); }
+  var ct = document.getElementById("chat-thread-container");
+  var ia = document.getElementById("chat-input-area");
+  var iv = document.getElementById("inspection-readiness-viewer");
+  if (ct) ct.style.display = "none";
+  if (ia) ia.style.display = "none";
+  if (iv) { iv.classList.add("open"); iv.setAttribute("aria-hidden", "false"); }
+  var scrollEl = document.getElementById("chat-area");
+  if (scrollEl) scrollEl.scrollTop = 0;
+  var innerScroll = document.querySelector("#inspection-readiness-viewer .dash-scroll");
+  if (innerScroll) innerScroll.scrollTop = 0;
+  await irLoadBootstrap();
+}
+
+function irSwitchTab(name) {
+  document.querySelectorAll(".ir-tab").forEach(function (b) {
+    b.classList.toggle("active", b.getAttribute("data-ir-tab") === name);
+  });
+  document.querySelectorAll(".ir-panel").forEach(function (p) {
+    p.classList.remove("active");
+  });
+  var el = document.getElementById("ir-panel-" + name);
+  if (el) el.classList.add("active");
+}
+
+async function irLoadBootstrap() {
+  var err = document.getElementById("ir-error");
+  if (err) { err.style.display = "none"; err.textContent = ""; }
+  try {
+    var res = await fetch("/api/inspection/bootstrap");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var d = await res.json();
+    irState.sources = d.sources || [];
+    irState.simulation_questions = d.simulation_questions || [];
+    irState.categories = d.categories || [];
+    irState.inspection_state = d.inspection_state;
+    try {
+      var ls = localStorage.getItem("cliniq_inspection_state");
+      if (ls) {
+        var parsed = JSON.parse(ls);
+        if (parsed && parsed.checklist) {
+          await fetch("/api/inspection/state", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(parsed) });
+          var r2 = await fetch("/api/inspection/bootstrap");
+          var d2 = await r2.json();
+          irState.inspection_state = d2.inspection_state;
+          irState.categories = d2.categories || irState.categories;
+        }
+      }
+    } catch (e) {}
+    irRenderAll();
+  } catch (e) {
+    if (err) { err.style.display = "block"; err.textContent = "Could not load Inspection Readiness. Is the server running?"; }
+    console.error(e);
+  }
+}
+
+async function irSyncState() {
+  if (!irState.inspection_state) return;
+  try {
+    await fetch("/api/inspection/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(irState.inspection_state)
+    });
+    try { localStorage.setItem("cliniq_inspection_state", JSON.stringify(irState.inspection_state)); } catch (e) {}
+  } catch (e) { console.error(e); }
+}
+
+function irRenderAll() {
+  irRenderOverview();
+  irRenderFindings();
+  irRenderChecklistInScore();
+  irRenderDocuments();
+  irRenderSimulation();
+  irRenderSources();
+}
+
+function irTitleCaseImpact(imp) {
+  if (!imp) return "—";
+  return String(imp).split(" ").map(function (w) {
+    return w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : "";
+  }).join(" ");
+}
+
+function irCategoryName(cat) {
+  var c = irState.categories || [];
+  for (var i = 0; i < c.length; i++) {
+    if (c[i].id === cat) return c[i].name || cat;
+  }
+  return cat || "—";
+}
+
+function irRenderDocuments() {
+  var host = document.getElementById("ir-doc-matrix-host");
+  var st = irState.inspection_state;
+  if (!host || !st) return;
+  var docs = st.documents || [];
+  if (!docs.length) {
+    host.innerHTML = "<p class=\"ir-copy\">No document matrix loaded. Reload Inspection Readiness.</p>";
+    return;
+  }
+  var html = "<table class=\"ir-doc-table\"><thead><tr><th>Expected document</th><th>Category</th><th>Status</th><th>Completeness %</th></tr></thead><tbody>";
+  docs.forEach(function (d, idx) {
+    var catLabel = irEsc(d.category) + " — " + irEsc(irCategoryName(d.category));
+    var stv = d.status || "missing";
+    html += "<tr><td>" + irEsc(d.expected_document || "") + "</td><td>" + catLabel + "</td><td><select data-ir-doc-idx=\"" + idx + "\" class=\"ir-doc-status\">" +
+      "<option value=\"missing\"" + (stv === "missing" ? " selected" : "") + ">Missing</option>" +
+      "<option value=\"uploaded\"" + (stv === "uploaded" ? " selected" : "") + ">Uploaded</option>" +
+      "<option value=\"needs_review\"" + (stv === "needs_review" ? " selected" : "") + ">Needs review</option>" +
+      "</select></td><td><input type=\"number\" min=\"0\" max=\"100\" class=\"ir-doc-score\" data-ir-doc-idx=\"" + idx + "\" value=\"" + (d.completeness_score != null ? String(d.completeness_score) : "0") + "\"/></td></tr>";
+  });
+  html += "</tbody></table>";
+  host.innerHTML = html;
+  host.querySelectorAll("select.ir-doc-status").forEach(function (sel) {
+    sel.onchange = function () {
+      var i = parseInt(sel.getAttribute("data-ir-doc-idx"), 10);
+      if (!irState.inspection_state.documents[i]) return;
+      irState.inspection_state.documents[i].status = sel.value;
+      irSyncState();
+    };
+  });
+  host.querySelectorAll("input.ir-doc-score").forEach(function (inp) {
+    inp.onchange = inp.onblur = function () {
+      var i = parseInt(inp.getAttribute("data-ir-doc-idx"), 10);
+      if (!irState.inspection_state.documents[i]) return;
+      var v = parseInt(inp.value, 10);
+      if (isNaN(v)) v = 0;
+      v = Math.max(0, Math.min(100, v));
+      inp.value = String(v);
+      irState.inspection_state.documents[i].completeness_score = v;
+      irSyncState();
+    };
+  });
+}
+
+function irRenderOverview() {
+  var st = irState.inspection_state;
+  if (!st) return;
+  var sc = st.score || {};
+  var elS = document.getElementById("ir-kpi-score");
+  var elR = document.getElementById("ir-kpi-risk");
+  if (elS) elS.textContent = sc.overall != null ? String(sc.overall) : "—";
+  if (elR) elR.textContent = sc.risk_level || "—";
+  var findings = st.findings || [];
+  var c = 0, m = 0;
+  findings.forEach(function (f) {
+    if (f.severity === "critical") c++;
+    else if (f.severity === "major") m++;
+  });
+  var elC = document.getElementById("ir-kpi-critical");
+  var elM = document.getElementById("ir-kpi-major");
+  if (elC) elC.textContent = String(c);
+  if (elM) elM.textContent = String(m);
+  var rd = document.getElementById("ir-risk-drivers");
+  var ia = document.getElementById("ir-immediate-attention");
+  var drivers = sc.inspection_risk_drivers || [];
+  if (rd) {
+    rd.innerHTML = "";
+    if (!drivers.length) {
+      var li0 = document.createElement("li");
+      li0.textContent = "Run Inspection Check to populate top drivers.";
+      rd.appendChild(li0);
+    } else {
+      drivers.forEach(function (d) {
+        var li = document.createElement("li");
+        li.innerHTML = "<strong>" + irEsc(d.severity || "") + "</strong> — " + irEsc(d.title || "") +
+          " <span style=\"color:var(--text3)\">(" + irEsc(irTitleCaseImpact(d.impact)) + ")</span>";
+        rd.appendChild(li);
+      });
+    }
+  }
+  var imm = sc.immediate_attention_required || [];
+  if (ia) {
+    ia.innerHTML = "";
+    if (!imm.length) {
+      var li1 = document.createElement("li");
+      li1.textContent = "No critical or major open findings.";
+      ia.appendChild(li1);
+    } else {
+      imm.forEach(function (d) {
+        var li = document.createElement("li");
+        li.innerHTML = "<strong>" + irEsc(d.severity || "") + "</strong> [" + irEsc(irTitleCaseImpact(d.impact)) + "]: " + irEsc(d.title || "");
+        ia.appendChild(li);
+      });
+    }
+  }
+}
+
+function irRenderFindings() {
+  var st = irState.inspection_state;
+  var host = document.getElementById("ir-findings-list");
+  var sum = document.getElementById("ir-score-summary");
+  if (!st || !host) return;
+  var sc = st.score || {};
+  if (sum) sum.textContent = "Overall " + (sc.overall != null ? sc.overall : "—") + " / Risk: " + (sc.risk_level || "—") + ".";
+  host.innerHTML = "";
+  (st.findings || []).forEach(function (f) {
+    var div = document.createElement("div");
+    div.className = "ir-finding " + (f.severity || "");
+    var title = f.title || f.gap || "";
+    var srcLabel = f.source && f.source.label ? f.source.label : "—";
+    var srcId = f.source && f.source.id ? f.source.id : "";
+    var impactLine = irTitleCaseImpact(f.impact);
+    div.innerHTML = "<div><strong>⚠️ " + irEsc(title) + "</strong></div>" +
+      "<div class=\"ir-finding-meta\">Severity: <strong>" + irEsc(f.severity) + "</strong> · Impact: <strong>" + irEsc(impactLine) + "</strong> · Source: " + irEsc(srcLabel) +
+      (srcId ? " <button type=\"button\" class=\"playbook-tool-btn\" style=\"margin-left:8px;padding:4px 10px;font-size:11px\" data-ir-src=\"" + irEsc(srcId) + "\">View Source</button>" : "") +
+      "</div>" +
+      (f.risk_statement ? "<div class=\"ir-finding-meta\" style=\"font-style:italic\">" + irEsc(f.risk_statement) + "</div>" : "") +
+      (f.evidence_required_to_close ? "<div class=\"ir-finding-meta\"><strong>Evidence to close:</strong> " + irEsc(f.evidence_required_to_close) + "</div>" : "") +
+      "<div class=\"ir-finding-meta\"><strong>Recommended action (CAPA):</strong> " + irEsc(f.recommended_action || "") + "</div>";
+    host.appendChild(div);
+  });
+  host.querySelectorAll("button[data-ir-src]").forEach(function (btn) {
+    btn.onclick = function () { openIrSourceModal(btn.getAttribute("data-ir-src")); };
+  });
+}
+
+function irEsc(s) {
+  if (!s) return "";
+  var d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function irRenderChecklistInScore() {
+  var st = irState.inspection_state;
+  var host = document.getElementById("ir-findings-list");
+  if (!st || !host) return;
+  var h2 = document.createElement("div");
+  h2.className = "dash-card-title";
+  h2.style.marginTop = "20px";
+  h2.textContent = "Checklist";
+  host.appendChild(h2);
+  (st.checklist || []).forEach(function (item, idx) {
+    var row = document.createElement("div");
+    row.className = "ir-check-row";
+    var sel = document.createElement("select");
+    sel.innerHTML = "<option value=\"incomplete\">Incomplete</option><option value=\"complete\">Complete</option><option value=\"needs_review\">Needs review</option><option value=\"not_applicable\">Not applicable</option>";
+    sel.value = item.status || "incomplete";
+    sel.onchange = function () {
+      irState.inspection_state.checklist[idx].status = sel.value;
+      irSyncState();
+    };
+    var lab = document.createElement("div");
+    lab.innerHTML = "<strong>" + irEsc(item.id) + "</strong> · " + irEsc(item.label) + " <span style=\"color:var(--text3)\">(" + irEsc(item.category) + ")</span>";
+    row.appendChild(lab);
+    row.appendChild(sel);
+    host.appendChild(row);
+  });
+}
+
+function irRenderSimulation() {
+  var role = (document.getElementById("ir-sim-role") || {}).value || "";
+  var host = document.getElementById("ir-sim-list");
+  if (!host) return;
+  host.innerHTML = "";
+  irState.simulation_questions.filter(function (q) { return !role || q.role === role; }).forEach(function (q) {
+    var d = document.createElement("div");
+    d.className = "ir-sim-q";
+    var cat = q.category ? "<div style=\"font-size:10px;color:var(--gold2);margin-bottom:4px\">" + irEsc(q.category) + "</div>" : "";
+    var rf = (q.red_flag_answers || []).map(function (x) { return "<li>" + irEsc(x) + "</li>"; }).join("");
+    d.innerHTML = cat +
+      "<div><strong>" + irEsc(q.role) + "</strong> — " + irEsc(q.question) + "</div>" +
+      (q.intent ? "<p style=\"font-size:11px;margin:6px 0 0 0;color:var(--text3)\"><strong>Inspector intent:</strong> " + irEsc(q.intent) + "</p>" : "") +
+      (q.expected_evidence ? "<p style=\"font-size:11px;margin:4px 0 0 0;color:var(--text2)\"><strong>Expected evidence:</strong> " + irEsc(q.expected_evidence) + "</p>" : "") +
+      (rf ? "<p style=\"font-size:11px;margin:6px 0 0 0;color:var(--text3)\"><strong>Red-flag answers:</strong></p><ul style=\"margin:4px 0 8px 1.2em;font-size:11px;color:var(--text2)\">" + rf + "</ul>" : "") +
+      (q.strong_answer_example ? "<p style=\"font-size:11px;margin:0;color:var(--text2)\"><strong>Strong example:</strong> " + irEsc(q.strong_answer_example) + "</p>" : "");
+    host.appendChild(d);
+  });
+}
+
+function irRenderSources() {
+  var host = document.getElementById("ir-sources-list");
+  if (!host) return;
+  host.innerHTML = "";
+  irState.sources.forEach(function (s) {
+    var d = document.createElement("div");
+    d.className = "ir-finding major";
+    d.style.borderLeftColor = "var(--border2)";
+    var cw = s.credibility_weight != null ? " · Credibility weight: " + String(s.credibility_weight) : "";
+    d.innerHTML = "<div><strong>" + irEsc(s.label) + "</strong> <span style=\"color:var(--text3)\">(" + irEsc(s.type) + ")" + irEsc(cw) + "</span></div>" +
+      "<p style=\"font-size:12px;margin:8px 0 0 0;color:var(--text2)\">" + irEsc(s.excerpt) + "</p>" +
+      "<button type=\"button\" class=\"playbook-tool-btn\" style=\"margin-top:8px;padding:4px 10px;font-size:11px\" data-ir-src2=\"" + irEsc(s.id) + "\">View Source</button>";
+    host.appendChild(d);
+  });
+  host.querySelectorAll("button[data-ir-src2]").forEach(function (btn) {
+    btn.onclick = function () { openIrSourceModal(btn.getAttribute("data-ir-src2")); };
+  });
+}
+
+function openIrSourceModal(sourceId) {
+  var s = irState.sources.find(function (x) { return x.id === sourceId; });
+  if (!s) return;
+  var ov = document.getElementById("ir-source-modal");
+  var t = document.getElementById("ir-modal-title");
+  var e = document.getElementById("ir-modal-excerpt");
+  var ty = document.getElementById("ir-modal-type");
+  var cr = document.getElementById("ir-modal-cred");
+  if (t) t.textContent = s.label || "";
+  if (e) e.textContent = "\"" + (s.excerpt || "") + "\"";
+  if (ty) ty.textContent = s.type ? "Type: " + s.type : "";
+  if (cr) cr.textContent = s.credibility_weight != null ? "Credibility weight: " + String(s.credibility_weight) : "";
+  if (ov) { ov.classList.add("open"); ov.setAttribute("aria-hidden", "false"); }
+}
+
+function closeIrSourceModal() {
+  var ov = document.getElementById("ir-source-modal");
+  if (ov) { ov.classList.remove("open"); ov.setAttribute("aria-hidden", "true"); }
+}
+
+async function runInspectionCheck() {
+  var err = document.getElementById("ir-error");
+  if (err) { err.style.display = "none"; }
+  await irSyncState();
+  try {
+    var res = await fetch("/api/inspection/run-check", { method: "POST" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var d = await res.json();
+    if (irState.inspection_state) {
+      irState.inspection_state.score = d.score;
+      irState.inspection_state.findings = d.findings;
+    }
+    try { localStorage.setItem("cliniq_inspection_state", JSON.stringify(irState.inspection_state)); } catch (e) {}
+    irRenderAll();
+  } catch (e) {
+    if (err) { err.style.display = "block"; err.textContent = "Run check failed."; }
+    console.error(e);
+  }
+}
+
+async function exportInspectionPack() {
+  await irSyncState();
+  try {
+    var res = await fetch("/api/export/inspection-pack", { method: "POST" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    var blob = await res.blob();
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "ClinIQ-Inspection-Pack.md";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (e) { console.error(e); alert("Export failed"); }
+}
+
+function closeOperationsDashboard() {
+  var dv = document.getElementById('operations-dashboard-viewer');
+  if (dv) {
+    dv.classList.remove('open');
+    dv.setAttribute('aria-hidden', 'true');
+  }
+  var ct = document.getElementById('chat-thread-container');
+  var ia = document.getElementById('chat-input-area');
+  if (ct) ct.style.display = '';
+  if (ia) ia.style.display = '';
+}
+
+function openOperationsDashboard() {
+  closePlaybookViewer();
+  closeCertificationViewer();
+  closeInspectionReadiness();
+  state.playbookId = null;
+  document.querySelectorAll('.playbook-btn').forEach(function (b) {
+    b.classList.remove('active');
+  });
+  var pv = document.getElementById('playbook-viewer');
+  if (pv) {
+    pv.classList.remove('open');
+    pv.setAttribute('aria-hidden', 'true');
+  }
+  var ct = document.getElementById('chat-thread-container');
+  var ia = document.getElementById('chat-input-area');
+  var dv = document.getElementById('operations-dashboard-viewer');
+  if (ct) ct.style.display = 'none';
+  if (ia) ia.style.display = 'none';
+  if (dv) {
+    dv.classList.add('open');
+    dv.setAttribute('aria-hidden', 'false');
+  }
+  var scrollEl = document.getElementById('chat-area');
+  if (scrollEl) scrollEl.scrollTop = 0;
+  var innerScroll = document.querySelector('#operations-dashboard-viewer .dash-scroll');
+  if (innerScroll) innerScroll.scrollTop = 0;
+  loadDashboardSummary();
+}
+
+function dashApplyStatusBadge(badgeEl, status, label) {
+  if (!badgeEl) return;
+  var st = (status || 'green').toLowerCase();
+  if (st !== 'red' && st !== 'yellow' && st !== 'green') st = 'green';
+  badgeEl.className = 'dash-status-badge status-' + st;
+  badgeEl.setAttribute('data-status', st);
+  var inner = badgeEl.querySelector('.dash-status-label');
+  if (inner) inner.textContent = label || '—';
+}
+
+async function loadDashboardSummary() {
+  var errEl = document.getElementById('dash-error');
+  if (errEl) {
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+  }
+  try {
+    var res = await fetch('/api/dashboard/summary');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var d = await res.json();
+    var r = d.risk_overview || {};
+    var v = d.visit_execution || {};
+    var c = d.compliance_alerts || {};
+    var a = d.audit_readiness || {};
+    function set(id, val) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = val != null && val !== '' ? String(val) : '—';
+    }
+    function setExpl(id, text) {
+      var el = document.getElementById(id);
+      if (el) el.textContent = text || '';
+    }
+    dashApplyStatusBadge(document.getElementById('dash-r-badge'), r.status, r.label);
+    setExpl('dash-r-expl', r.explanation);
+    set('dash-r-proto', r.protocols_analyzed);
+    set('dash-r-high', r.high_risk_protocols);
+    set('dash-r-crit', r.critical_risks);
+    set('dash-r-med', r.medium_risks);
+    set('dash-r-low', r.low_risks);
+
+    dashApplyStatusBadge(document.getElementById('dash-v-badge'), v.status, v.label);
+    setExpl('dash-v-expl', v.explanation);
+    set('dash-v-total', v.visits_logged);
+    set('dash-v-cr', v.visits_logged ? (String(v.completion_rate) + '%') : '—');
+    set('dash-v-vr', v.visits_logged ? (String(v.verification_rate) + '%') : '—');
+    set('dash-v-unv', v.unverified_visits);
+
+    dashApplyStatusBadge(document.getElementById('dash-c-badge'), c.status, c.label);
+    setExpl('dash-c-expl', c.explanation);
+    set('dash-c-nopack', c.protocols_without_audit_pack);
+    set('dash-c-hirisk', c.high_risk_without_logs);
+    set('dash-c-miss', c.missing_visit_logs);
+    set('dash-c-week', c.open_controls);
+
+    dashApplyStatusBadge(document.getElementById('dash-a-badge'), a.status, a.label);
+    setExpl('dash-a-expl', a.explanation);
+    set('dash-a-packs', a.audit_packs_generated);
+    set('dash-a-sop', a.sop_available ? 'Available' : '—');
+    set('dash-a-train', a.training_available ? 'Available' : '—');
+    set('dash-a-chk', a.checklist_available ? 'Available' : '—');
+  } catch (e) {
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent = 'Could not load dashboard summary. Ensure the ClinIQ server is running.';
+    }
+    console.error(e);
+  }
+}
+
+var certQuizLoaded = false;
+var certState = { sessionId: null, quizPassed: false, quizAnswers: null };
+
+function closeCertificationViewer() {
+  var cv = document.getElementById('certification-viewer');
+  if (cv) {
+    cv.classList.remove('open');
+    cv.setAttribute('aria-hidden', 'true');
+  }
+  var ct = document.getElementById('chat-thread-container');
+  var ia = document.getElementById('chat-input-area');
+  if (ct) ct.style.display = '';
+  if (ia) ia.style.display = '';
+}
+
+function loadCertLocal() {
+  try {
+    var j = JSON.parse(localStorage.getItem('cliniq_cert_local') || '{}');
+    var s = document.getElementById('cert-sop');
+    var t = document.getElementById('cert-training');
+    var c = document.getElementById('cert-checklist');
+    if (s) s.checked = !!j.sop;
+    if (t) t.checked = !!j.training;
+    if (c) c.checked = !!j.checklist;
+    certState.quizPassed = !!j.quizPassed;
+    certState.quizAnswers = j.quizAnswers || null;
+    if (j.siteName) {
+      var sn = document.getElementById('cert-site-name');
+      if (sn) sn.value = j.siteName;
+    }
+    if (j.signatory) {
+      var sg = document.getElementById('cert-signatory');
+      if (sg) sg.value = j.signatory;
+    }
+  } catch (e) {}
+}
+
+function saveCertLocal() {
+  var sn = document.getElementById('cert-site-name');
+  var sg = document.getElementById('cert-signatory');
+  var o = {
+    sop: document.getElementById('cert-sop') && document.getElementById('cert-sop').checked,
+    training: document.getElementById('cert-training') && document.getElementById('cert-training').checked,
+    checklist: document.getElementById('cert-checklist') && document.getElementById('cert-checklist').checked,
+    quizPassed: certState.quizPassed,
+    quizAnswers: certState.quizAnswers,
+    siteName: sn ? sn.value : '',
+    signatory: sg ? sg.value : ''
+  };
+  localStorage.setItem('cliniq_cert_local', JSON.stringify(o));
+}
+
+async function ensureCertSession() {
+  var sid = localStorage.getItem('cliniq_cert_session');
+  if (!sid) {
+    var r = await fetch('/api/certification/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ patch: {} })
+    });
+    var d = await r.json();
+    sid = d.session_id;
+    localStorage.setItem('cliniq_cert_session', sid);
+  }
+  certState.sessionId = sid;
+  return sid;
+}
+
+async function certSyncFromForm() {
+  try {
+    var sid = await ensureCertSession();
+    var patch = {
+      sop_completed: document.getElementById('cert-sop').checked,
+      training_completed: document.getElementById('cert-training').checked,
+      checklist_verified: document.getElementById('cert-checklist').checked
+    };
+    await fetch('/api/certification/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sid, patch: patch })
+    });
+    saveCertLocal();
+    updateCertStepUI();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+function applyCertQuizAnswersToDom() {
+  if (!certState.quizAnswers || !Array.isArray(certState.quizAnswers)) return;
+  certState.quizAnswers.forEach(function (val, qi) {
+    var inp = document.querySelector('input[name="certq' + qi + '"][value="' + val + '"]');
+    if (inp) inp.checked = true;
+  });
+}
+
+async function loadCertQuiz() {
+  var r = await fetch('/api/certification/quiz');
+  var d = await r.json();
+  var container = document.getElementById('cert-quiz-container');
+  if (!container || !d.questions) return;
+  var html = '';
+  d.questions.forEach(function (q, qi) {
+    html += '<div class="quiz-q" data-qid="' + q.id + '"><p class="quiz-prompt"><strong>Q' + (qi + 1) + '.</strong> ' + escapeHtml(q.prompt) + '</p>';
+    q.options.forEach(function (opt, oi) {
+      html += '<label class="quiz-opt"><input type="radio" name="certq' + qi + '" value="' + oi + '"> ' + escapeHtml(opt) + '</label>';
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html;
+  applyCertQuizAnswersToDom();
+}
+
+function updateCertStepUI() {
+  var s1 = document.getElementById('cert-sop') && document.getElementById('cert-sop').checked;
+  var s2 = document.getElementById('cert-training') && document.getElementById('cert-training').checked;
+  var s4 = document.getElementById('cert-checklist') && document.getElementById('cert-checklist').checked;
+  var s3 = certState.quizPassed;
+  var p1 = document.getElementById('cert-pill-1');
+  var p2 = document.getElementById('cert-pill-2');
+  var p3 = document.getElementById('cert-pill-3');
+  var p4 = document.getElementById('cert-pill-4');
+  var p5 = document.getElementById('cert-pill-5');
+  if (p1) p1.classList.toggle('done', s1);
+  if (p2) p2.classList.toggle('done', s2);
+  if (p3) p3.classList.toggle('done', s3);
+  if (p4) p4.classList.toggle('done', s4);
+  var sn = document.getElementById('cert-site-name');
+  var sg = document.getElementById('cert-signatory');
+  var namesOk = sn && sg && sn.value.trim().length > 0 && sg.value.trim().length > 0;
+  var all = s1 && s2 && s3 && s4 && namesOk;
+  if (p5) p5.classList.toggle('done', all);
+  var btn = document.getElementById('cert-generate-btn');
+  var btnPdf = document.getElementById('cert-generate-pdf-btn');
+  if (btn) btn.disabled = !all;
+  if (btnPdf) btnPdf.disabled = !all;
+}
+
+async function submitCertQuiz() {
+  var answers = [];
+  for (var qi = 0; qi < 5; qi++) {
+    var sel = document.querySelector('input[name="certq' + qi + '"]:checked');
+    if (!sel) {
+      addMessage('system', 'Please answer all five quiz questions.');
+      return;
+    }
+    answers.push(parseInt(sel.value, 10));
+  }
+  try {
+    var r = await fetch('/api/certification/quiz-grade', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: answers })
+    });
+    var d = await r.json();
+    certState.quizPassed = d.passed;
+    certState.quizAnswers = answers;
+    var sid = await ensureCertSession();
+    await fetch('/api/certification/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: sid,
+        patch: { quiz_passed: d.passed, quiz_score: d.score }
+      })
+    });
+    var resEl = document.getElementById('cert-quiz-result');
+    if (resEl) {
+      resEl.innerHTML = d.passed
+        ? '<p class="cert-pass">Passed: ' + d.score + '/' + d.total + ' correct.</p>'
+        : '<p class="cert-fail">Not passed: ' + d.score + '/' + d.total + ' (need ' + d.required_correct + ' correct). Review Site Playbooks and retry.</p>';
+    }
+    saveCertLocal();
+    updateCertStepUI();
+  } catch (e) {
+    addMessage('system', 'Quiz grading failed. Check server connection.');
+    console.error(e);
+  }
+}
+
+async function generateSiteCertificate() {
+  var answers = [];
+  for (var qi = 0; qi < 5; qi++) {
+    var sel = document.querySelector('input[name="certq' + qi + '"]:checked');
+    answers.push(sel ? parseInt(sel.value, 10) : -1);
+  }
+  try {
+    var sid = await ensureCertSession();
+    var body = {
+      session_id: sid,
+      site_name: document.getElementById('cert-site-name').value.trim(),
+      signatory_name: document.getElementById('cert-signatory').value.trim(),
+      sop_completed: document.getElementById('cert-sop').checked,
+      training_completed: document.getElementById('cert-training').checked,
+      checklist_verified: document.getElementById('cert-checklist').checked,
+      quiz_answers: answers
+    };
+    var res = await fetch('/api/certification/certificate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      var err = {};
+      try {
+        err = await res.json();
+      } catch (e2) {}
+      addMessage('system', '❌ ' + (err.detail || 'Certificate generation failed'));
+      return;
+    }
+    var blob = await res.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ClinIQ-Site-Certification.md';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    addMessage('system', '✅ Site certification downloaded (Markdown).');
+    saveCertLocal();
+  } catch (e) {
+    addMessage('system', '❌ Certificate request failed');
+    console.error(e);
+  }
+}
+
+async function generateSiteCertificatePdf() {
+  var answers = [];
+  for (var qi = 0; qi < 5; qi++) {
+    var sel = document.querySelector('input[name="certq' + qi + '"]:checked');
+    answers.push(sel ? parseInt(sel.value, 10) : -1);
+  }
+  try {
+    var sid = await ensureCertSession();
+    var body = {
+      session_id: sid,
+      site_name: document.getElementById('cert-site-name').value.trim(),
+      signatory_name: document.getElementById('cert-signatory').value.trim(),
+      sop_completed: document.getElementById('cert-sop').checked,
+      training_completed: document.getElementById('cert-training').checked,
+      checklist_verified: document.getElementById('cert-checklist').checked,
+      quiz_answers: answers,
+      output_format: 'pdf'
+    };
+    var res = await fetch('/api/certification/certificate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) {
+      var err = {};
+      try {
+        err = await res.json();
+      } catch (e2) {}
+      addMessage('system', '❌ ' + (err.detail || 'PDF certificate failed'));
+      return;
+    }
+    var blob = await res.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'ClinIQ-Site-Certification.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    addMessage('system', '✅ Site certification PDF downloaded.');
+    saveCertLocal();
+  } catch (e) {
+    addMessage('system', '❌ Certificate PDF request failed');
+    console.error(e);
+  }
+}
+
+function printCertification() {
+  document.body.classList.add('print-cert-only');
+  window.print();
+  setTimeout(function () { document.body.classList.remove('print-cert-only'); }, 500);
+}
+
+async function openCertificationViewer() {
+  closePlaybookViewer();
+  closeOperationsDashboard();
+  closeInspectionReadiness();
+  state.playbookId = null;
+  document.querySelectorAll('.playbook-btn').forEach(function (b) {
+    b.classList.remove('active');
+  });
+  var pv = document.getElementById('playbook-viewer');
+  if (pv) {
+    pv.classList.remove('open');
+    pv.setAttribute('aria-hidden', 'true');
+  }
+  var ct = document.getElementById('chat-thread-container');
+  var ia = document.getElementById('chat-input-area');
+  var cv = document.getElementById('certification-viewer');
+  if (ct) ct.style.display = 'none';
+  if (ia) ia.style.display = 'none';
+  if (cv) {
+    cv.classList.add('open');
+    cv.setAttribute('aria-hidden', 'false');
+  }
+  var scrollEl = document.getElementById('chat-area');
+  if (scrollEl) scrollEl.scrollTop = 0;
+  var innerScroll = document.querySelector('#certification-viewer .playbook-doc-scroll');
+  if (innerScroll) innerScroll.scrollTop = 0;
+
+  loadCertLocal();
+  await ensureCertSession();
+  await certSyncFromForm();
+  if (!certQuizLoaded) {
+    await loadCertQuiz();
+    certQuizLoaded = true;
+  } else {
+    applyCertQuizAnswersToDom();
+  }
+  if (certState.quizPassed) {
+    var resEl = document.getElementById('cert-quiz-result');
+    if (resEl && !resEl.innerHTML) {
+      resEl.innerHTML = '<p class="cert-pass">Previously passed. Submit again to re-score if you change answers.</p>';
+    }
+  }
+  updateCertStepUI();
+}
+
+function playbookAppendSignatureMd(playbookId) {
+  var isChk = playbookId === 'daily' || playbookId === 'weekly';
+  var s = '';
+  if (isChk) {
+    s += '\n\n## Checklist attestation\n\nReviewed by: _______________________________________________\n\nVerified by (PI/Sub-I): _______________________________________________\n';
+  }
+  s += '\n\n## Signature block\n\nName: _______________________________________________\n\nRole: _______________________________________________\n\nSignature: _______________________________________________\n\nDate: _______________________________________________\n';
+  return s;
+}
+
+function openPlaybook(id) {
+  closeCertificationViewer();
+  closeOperationsDashboard();
+  closeInspectionReadiness();
+  const pb = PLAYBOOKS[id];
+  if (!pb) return;
+  state.playbookId = id;
+  document.querySelectorAll('.playbook-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-playbook') === id);
+  });
+  const pv = document.getElementById('playbook-viewer');
+  const ct = document.getElementById('chat-thread-container');
+  const ia = document.getElementById('chat-input-area');
+  const titleEl = document.getElementById('playbook-view-title');
+  const bodyEl = document.getElementById('playbook-doc-body');
+  const sigArea = document.getElementById('playbook-signature-area');
+  const chkAttest = document.getElementById('playbook-checklist-attest');
+  if (titleEl) titleEl.textContent = pb.title;
+  if (bodyEl) bodyEl.innerHTML = renderMarkdown(pb.md);
+  if (sigArea) sigArea.style.display = 'block';
+  if (chkAttest) chkAttest.style.display = (id === 'daily' || id === 'weekly') ? 'block' : 'none';
+  if (ct) ct.style.display = 'none';
+  if (ia) ia.style.display = 'none';
+  if (pv) {
+    pv.classList.add('open');
+    pv.setAttribute('aria-hidden', 'false');
+  }
+  const scrollEl = document.getElementById('chat-area');
+  if (scrollEl) scrollEl.scrollTop = 0;
+  const innerScroll = document.querySelector('#playbook-viewer .playbook-doc-scroll');
+  if (innerScroll) innerScroll.scrollTop = 0;
+}
+
+function downloadCurrentPlaybook() {
+  const id = state.playbookId;
+  const pb = id && PLAYBOOKS[id];
+  if (!pb) return;
+  const text = pb.md + playbookAppendSignatureMd(id);
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = pb.filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+async function downloadPlaybookPdf() {
+  const id = state.playbookId;
+  const pb = id && PLAYBOOKS[id];
+  if (!pb) return;
+  var docKind = (id === 'daily' || id === 'weekly') ? ('checklist_' + id) : 'general';
+  try {
+    const res = await fetch('/api/export/playbook-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: pb.title,
+        body_markdown: pb.md,
+        doc_kind: docKind
+      })
+    });
+    if (!res.ok) {
+      var err = {};
+      try { err = await res.json(); } catch (e) {}
+      addMessage('system', '❌ ' + (err.detail || 'Playbook PDF failed. Install reportlab on the server.'));
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = (pb.filename || 'playbook').replace(/\.md$/i, '.pdf');
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    addMessage('system', '✅ Playbook PDF downloaded.');
+  } catch (e) {
+    addMessage('system', '❌ Playbook PDF request failed');
+    console.error(e);
+  }
+}
+
+function printPlaybook() {
+  if (!state.playbookId) return;
+  document.body.classList.add('print-playbook-only');
+  window.print();
+  setTimeout(function () { document.body.classList.remove('print-playbook-only'); }, 500);
+}
+
+function exportSession() {
+  const area = getChatThreadRoot();
+  const lines = ['# ClinIQ — session export', \`Date: \${new Date().toLocaleString('en-US')}\`, ''];
+  area.querySelectorAll('.message').forEach(m => {
+    const bubble = m.querySelector('.msg-bubble');
+    const meta = m.querySelector('.msg-meta');
+    if (!bubble) return;
+    let role = 'system';
+    if (m.classList.contains('user')) role = 'user';
+    else if (m.classList.contains('assistant')) role = 'assistant';
+    lines.push(\`[\${role}] \${bubble.innerText || bubble.textContent || ''}\`);
+    if (meta) lines.push(meta.textContent || '');
+    lines.push('');
+  });
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'cliniq-session.txt';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

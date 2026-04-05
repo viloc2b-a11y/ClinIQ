@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest"
+import { describe, expect, it, beforeEach, afterEach, vi } from "vitest"
 
 import type { EventStoreWriteInputRow } from "./to-event-store-write-input"
 import { toEventStoreBoundaryInput } from "./to-event-store-boundary-input"
@@ -14,6 +14,7 @@ import {
   MemoryPersistenceAdapter,
   resetMemoryPersistenceAdapterState,
 } from "../../cliniq-core/action-center/memory-persistence-adapter"
+import * as resolvePersistenceModule from "../../cliniq-core/action-center/resolve-persistence-adapter"
 
 function writeRow(
   overrides: Partial<EventStoreWriteInputRow> & Pick<EventStoreWriteInputRow, "clientEventId">,
@@ -169,18 +170,73 @@ describe("runEventStoreControlledWrite", () => {
     expect(out.summary.rejectedCount).toBe(1)
   })
 
-  it("allowWrite true with no writer and no persistenceAdapter", async () => {
+  it("allowWrite true with no explicit adapter uses resolver memory when feature flag off", async () => {
+    vi.unstubAllEnvs()
+    resetMemoryPersistenceAdapterState()
     const row = await oneValidBoundaryRow()
     const out = await runEventStoreControlledWrite({
       rows: [row],
       allowWrite: true,
     })
     expect(out.mode).toBe("write_attempt")
-    expect(out.writeResult.attempted).toBe(false)
-    expect(out.writeResult.notes).toContain(
-      "No safe boundary write function is currently available.",
+    expect(out.writeResult.attempted).toBe(true)
+    expect(out.writeResult.succeeded).toBe(1)
+    expect(out.writeResult.notes.some((n) => n.includes("Resolved Action Center persistence adapter: memory"))).toBe(
+      true,
     )
-    expect(out.warnings.some((w) => w.includes("no safe boundary writer is available"))).toBe(true)
+  })
+
+  it("allowWrite true resolver throws when persistence enabled without supabase mode", async () => {
+    vi.stubEnv("ENABLE_ACTION_CENTER_PERSISTENCE", "true")
+    try {
+      const row = await oneValidBoundaryRow()
+      const out = await runEventStoreControlledWrite({
+        rows: [row],
+        allowWrite: true,
+      })
+      expect(out.writeResult.attempted).toBe(false)
+      expect(out.writeResult.notes.some((n) => n.includes("Persistence adapter resolution failed:"))).toBe(true)
+      expect(
+        out.writeResult.notes.some((n) => n.includes("action_center_real_persistence_requires_supabase_mode")),
+      ).toBe(true)
+      expect(out.warnings.some((w) => w.includes("could not resolve a persistence adapter"))).toBe(true)
+      expect(out.warnings.some((w) => w.includes("no safe boundary writer is available"))).toBe(true)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it("allowWrite true resolver fails when supabase mode on but Supabase env missing", async () => {
+    vi.stubEnv("ENABLE_ACTION_CENTER_PERSISTENCE", "true")
+    vi.stubEnv("CLINIQ_ACTION_CENTER_PERSISTENCE_MODE", "supabase")
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "")
+    vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "")
+    try {
+      const row = await oneValidBoundaryRow()
+      const out = await runEventStoreControlledWrite({
+        rows: [row],
+        allowWrite: true,
+      })
+      expect(out.writeResult.attempted).toBe(false)
+      expect(out.writeResult.notes.some((n) => n.includes("missing_supabase_env"))).toBe(true)
+      expect(out.warnings.some((w) => w.includes("could not resolve a persistence adapter"))).toBe(true)
+    } finally {
+      vi.unstubAllEnvs()
+    }
+  })
+
+  it("allowWrite true explicit persistenceAdapter does not call resolver", async () => {
+    vi.unstubAllEnvs()
+    const spy = vi.spyOn(resolvePersistenceModule, "resolveActionCenterPersistenceAdapter")
+    const row = await oneValidBoundaryRow()
+    const adapter = new MemoryPersistenceAdapter()
+    await runEventStoreControlledWrite({
+      rows: [row],
+      allowWrite: true,
+      persistenceAdapter: adapter,
+    })
+    expect(spy).not.toHaveBeenCalled()
+    spy.mockRestore()
   })
 
   it("warns on empty input", async () => {

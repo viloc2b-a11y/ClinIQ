@@ -53,3 +53,8 @@ cliniq-engine/.claude/
 cliniq-engine/.claire/
 __pycache__/
 *.pyc
+
+# Python venvs & runtime (monorepo)
+backend/.venv/
+backend/uploads/
+cliniq-engine/.venv/

@@ -35,6 +35,7 @@ export { toEventStoreBoundaryInput } from "./to-event-store-boundary-input"
 export { validateEventStoreBoundary } from "./validate-event-store-boundary"
 export { boundaryRowClientRef, runEventStoreDryWrite } from "./run-event-store-dry-write"
 export { runEventStoreControlledWrite } from "./run-event-store-controlled-write"
+export { verifyActionCenterWrite } from "./verify-action-center-write"
 
 /* Deterministic demo fixtures (SoA + invoice) */
 export { demoInvoiceRows, demoSoaImportRows } from "./fixtures/soa-event-log-demo"

@@ -27,6 +27,7 @@ const REQUIRED_EXPORTS = [
   "validateEventStoreBoundary",
   "runEventStoreDryWrite",
   "runEventStoreControlledWrite",
+  "verifyActionCenterWrite",
   "runSoaReviewToDraftEvents",
   "runSoaReviewToEventStoreWriteInput",
 ] as const
