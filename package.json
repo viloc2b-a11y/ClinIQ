@@ -10,7 +10,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "demo:revenue-protection": "npx tsx scripts/run-revenue-protection-demo.ts"
+    "demo:revenue-protection": "npx tsx scripts/run-revenue-protection-demo.ts",
+    "demo:soa-to-expected": "npx tsx scripts/run-soa-to-expected-demo.ts",
+    "demo:soa-revenue-protection": "npx tsx scripts/run-soa-revenue-protection-demo.ts",
+    "demo:soa-event-log": "npx tsx scripts/run-soa-event-log-demo.ts",
+    "demo:soa-event-store-write-input": "npx tsx scripts/run-soa-event-store-write-input-demo.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

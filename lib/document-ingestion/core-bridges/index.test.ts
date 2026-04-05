@@ -5,6 +5,12 @@ import {
   classifyCoreSoaActivities,
   runCoreBridgePackage,
   runCorePayloadPackage,
+  runSoaReviewToDraftEvents,
+  runSoaRevenueProtectionReview,
+  toDraftEventLogRows,
+  toEventLogSchemaCandidate,
+  runSoaToExpectedBillables,
+  toRevenueProtectionExpectedRows,
   toCoreBudgetReviewPayload,
   toCoreBudgetReviewRows,
   toCoreInvoiceReviewPayload,
@@ -27,6 +33,12 @@ describe("core-bridges index exports", () => {
     expect(typeof toCoreSoaStructuredInput).toBe("function")
     expect(typeof classifyCoreSoaActivities).toBe("function")
     expect(typeof buildInitialExpectedBillables).toBe("function")
+    expect(typeof runSoaToExpectedBillables).toBe("function")
+    expect(typeof toRevenueProtectionExpectedRows).toBe("function")
+    expect(typeof runSoaRevenueProtectionReview).toBe("function")
+    expect(typeof runSoaReviewToDraftEvents).toBe("function")
+    expect(typeof toDraftEventLogRows).toBe("function")
+    expect(typeof toEventLogSchemaCandidate).toBe("function")
   })
 
   it("importing from index runs package orchestrator with mixed mock input", async () => {
