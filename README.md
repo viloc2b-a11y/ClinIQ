@@ -29,6 +29,8 @@ ClinIQ is wired for a **self-hosted** Supabase instance (for example on your own
 
 Optional direct Postgres URL (psql, GUI tools) can live in `.env.local` as `DATABASE_URL`; keep it out of git.
 
+**Action Center persistence:** `CLINIQ_ACTION_CENTER_PERSISTENCE_MODE` defaults to **`memory`** (in-process shared store, seeded on first `GET /api/action-center` via mock pipeline bootstrap). Set to **`supabase`** to use the Supabase adapter (same `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` as other server routes). See `.env.example`.
+
 ## Core packages (`lib/cliniq-core/`)
 
 | Area | Path | Role |
@@ -44,6 +46,8 @@ Optional direct Postgres URL (psql, GUI tools) can live in `.env.local` as `DATA
 | **Cost truth** | `cost-truth/` | Procedure time × role rates, overhead, margin → `CostBreakdown` (`price_with_margin` is the loaded unit price) |
 | **API helpers** | `api/` | `test-cost-client.ts`: default `CLINIQ_DEFAULT_PAYLOADS` per fee code + `POST /api/test-cost` client |
 | **Revenue engine** | `analysis/`, `demo/` | Deterministic SoA ↔ budget gap, revenue projection & coverage %, negotiation actions, executive decision (`SAFE` / `MODERATE_RISK` / `HIGH_RISK`); budget vs contract alignment (terms, invoicing, red flags) with negotiation-ready copy |
+| **Action Center** | `action-center/` | Leakage-aware work queue: `buildActionCenter`, write-through merge, **persistence** (memory default or Supabase via `CLINIQ_ACTION_CENTER_PERSISTENCE_MODE`), API-backed list/mutate |
+| **Events / ingest** | `events/` | `ingestEvent`: `event_log` insert → billables → ledger → claims → invoice → leakage; on **`visit_completed`**, **Action Center sync** (`runActionCenterSyncFromRuntime` → `writeThroughActionCenter`) with additive `actionCenterSync` metadata |
 
 **Expected billables pricing (Module 5):** `generateExpectedBillablesFromBudget` resolves unit price in order: default Cost Truth payload when `line.lineCode` matches `CLINIQ_DEFAULT_PAYLOADS` (from `lib/cliniq-core/api/test-cost-client.ts`), then optional line-level `costTruthProcedure` + params, then internal-cost multipliers, then legacy internal totals.
 
@@ -63,6 +67,14 @@ Optional direct Postgres URL (psql, GUI tools) can live in `.env.local` as `DATA
 
 Public entry: `import { … } from "@/lib/cliniq-core/ar"` (or relative path to `lib/cliniq-core/ar/index.ts`).
 
+## API routes (selected)
+
+| Route | Role |
+|-------|------|
+| `GET /api/action-center` | Bootstrap memory Action Center (if needed), return items + summary from persistence |
+| `POST /api/action-center/mutate` | Apply row actions against persisted items |
+| `POST /api/ingest-event` | Body: `event` + `expectedBillables` → `ingestEvent`; response includes optional **`actionCenterSync`** (`insertedCount` / `updatedCount` / `unchangedCount` when `ok: true`, or `ok: false` + `error` without failing the core ingest) |
+
 ## Tests
 
 ```bash
@@ -70,6 +82,8 @@ npm test              # once
 npm run test:watch    # watch mode
 npm run test:coverage # with coverage
 ```
+
+Action Center + ingest: `npx vitest run lib/cliniq-core/action-center/ lib/cliniq-core/events/ app/api/action-center/ app/api/ingest-event/`
 
 ## CLI scripts
 
@@ -89,7 +103,7 @@ See `scripts/README.md` for conventions.
 
 ## Structure
 
-- App routes and UI: `app/`, `components/`
+- App routes and UI: `app/`, `components/` (including `app/api/action-center/`, `app/api/ingest-event/`)
 - Deterministic analysis + revenue demos: `lib/cliniq-core/analysis/`, `lib/cliniq-core/demo/`
 - Product notes: `docs/product-architecture.md`, `features/README.md`, `docs/cliniq-billing-to-cash-overview.md`, `docs/cliniq-demo-walkthrough.md`, `docs/cliniq-value-narrative.md`
 - Database SQL and Supabase app helpers: `supabase/` (client, server, middleware, migrations, seed)
