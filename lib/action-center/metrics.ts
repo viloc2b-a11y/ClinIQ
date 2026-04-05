@@ -1,28 +1,44 @@
-const metrics = {
-  writesAttempted: 0,
-  writesSuccess: 0,
-  writesFailed: 0,
+import { getActionCenterMetricsStore } from "./metrics/store/get-store"
+import type { ActionCenterMetrics } from "./metrics/store/types"
+
+export type { ActionCenterMetrics } from "./metrics/store/types"
+
+export async function trackWriteAttempt(): Promise<void> {
+  const store = getActionCenterMetricsStore()
+  const metrics = await store.get()
+
+  await store.set({
+    ...metrics,
+    writesAttempted: metrics.writesAttempted + 1,
+  })
 }
 
-export function trackWriteAttempt(): void {
-  metrics.writesAttempted += 1
+export async function trackWriteSuccess(): Promise<void> {
+  const store = getActionCenterMetricsStore()
+  const metrics = await store.get()
+
+  await store.set({
+    ...metrics,
+    writesSuccess: metrics.writesSuccess + 1,
+  })
 }
 
-export function trackWriteSuccess(): void {
-  metrics.writesSuccess += 1
+export async function trackWriteFail(): Promise<void> {
+  const store = getActionCenterMetricsStore()
+  const metrics = await store.get()
+
+  await store.set({
+    ...metrics,
+    writesFailed: metrics.writesFailed + 1,
+  })
 }
 
-export function trackWriteFail(): void {
-  metrics.writesFailed += 1
+export async function getMetrics(): Promise<ActionCenterMetrics> {
+  const store = getActionCenterMetricsStore()
+  return store.get()
 }
 
-export function getMetrics(): Readonly<typeof metrics> {
-  return { ...metrics }
-}
-
-/** Tests / isolated runs */
-export function resetMetrics(): void {
-  metrics.writesAttempted = 0
-  metrics.writesSuccess = 0
-  metrics.writesFailed = 0
+export async function resetMetrics(): Promise<void> {
+  const store = getActionCenterMetricsStore()
+  await store.reset()
 }

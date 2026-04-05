@@ -39,10 +39,10 @@ export async function writeActionCenterRecords(
   }
   const deduped = Array.from(uniqueMap.values())
 
-  trackWriteAttempt()
+  await trackWriteAttempt()
 
   if (deduped.length === 0) {
-    trackWriteSuccess()
+    await trackWriteSuccess()
     const summary: ActionCenterWriteSummary = {
       ok: true,
       partial: false,
@@ -59,7 +59,7 @@ export async function writeActionCenterRecords(
   }
 
   for (const record of deduped) {
-    appendAudit({
+    await appendAudit({
       id: record.id,
       step: "write_attempt",
       timestamp: new Date().toISOString(),
@@ -73,14 +73,14 @@ export async function writeActionCenterRecords(
 
     if (result.written !== deduped.length) {
       for (const record of deduped) {
-        appendAudit({
+        await appendAudit({
           id: record.id,
           step: "write_fail",
           timestamp: new Date().toISOString(),
         })
       }
 
-      trackWriteFail()
+      await trackWriteFail()
 
       const summary: ActionCenterWriteSummary = {
         ok: false,
@@ -98,14 +98,14 @@ export async function writeActionCenterRecords(
     }
 
     for (const record of deduped) {
-      appendAudit({
+      await appendAudit({
         id: record.id,
         step: "write_success",
         timestamp: new Date().toISOString(),
       })
     }
 
-    trackWriteSuccess()
+    await trackWriteSuccess()
 
     const summary: ActionCenterWriteSummary = {
       ok: true,
@@ -122,14 +122,14 @@ export async function writeActionCenterRecords(
     return summary
   } catch {
     for (const record of deduped) {
-      appendAudit({
+      await appendAudit({
         id: record.id,
         step: "write_fail",
         timestamp: new Date().toISOString(),
       })
     }
 
-    trackWriteFail()
+    await trackWriteFail()
 
     const summary: ActionCenterWriteSummary = {
       ok: false,

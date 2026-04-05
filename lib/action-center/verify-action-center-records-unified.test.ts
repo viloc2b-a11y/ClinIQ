@@ -8,20 +8,20 @@ import { verifyActionCenterRecordsUnified } from "./verify-action-center-records
 import { writeActionCenterRecords } from "./write-action-center-records"
 
 describe("verifyActionCenterRecordsUnified", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.unstubAllEnvs()
     vi.stubEnv("CLINIQ_ENABLE_REAL_PERSISTENCE", "")
     resetPersistenceAdapterCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.unstubAllEnvs()
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
   it("supports full mode", async () => {

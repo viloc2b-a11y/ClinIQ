@@ -17,8 +17,8 @@ describe("action center envelope builders", () => {
   beforeEach(async () => {
     delete process.env.CLINIQ_ENABLE_REAL_PERSISTENCE
     resetPersistenceAdapterCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
     resetOperationEnvelopeStoreCache()
     await resetOperationEnvelopeHistory()
   })
@@ -26,8 +26,8 @@ describe("action center envelope builders", () => {
   afterEach(async () => {
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
     resetOperationEnvelopeStoreCache()
     await resetOperationEnvelopeHistory()
   })

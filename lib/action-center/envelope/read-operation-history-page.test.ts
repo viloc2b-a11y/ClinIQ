@@ -17,8 +17,8 @@ describe("readOperationHistoryPage", () => {
   beforeEach(async () => {
     delete process.env.CLINIQ_ENABLE_REAL_PERSISTENCE
     resetPersistenceAdapterCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
     resetOperationEnvelopeStoreCache()
     await resetOperationEnvelopeHistory()
   })
@@ -26,8 +26,8 @@ describe("readOperationHistoryPage", () => {
   afterEach(async () => {
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
     resetOperationEnvelopeStoreCache()
     await resetOperationEnvelopeHistory()
   })
@@ -66,8 +66,9 @@ describe("readOperationHistoryPage", () => {
 
     const first = await readOperationHistoryPage({ limit: 2 })
 
+    expect(first.records.length).toBe(2)
     expect(first.records.map((r) => r.kind)).toEqual(["write", "verify"])
-    expect(typeof first.nextCursor).toBe("string")
+    expect(first.nextCursor).not.toBeNull()
 
     const second = await readOperationHistoryPage({
       limit: 2,

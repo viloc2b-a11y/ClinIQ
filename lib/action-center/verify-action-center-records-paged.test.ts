@@ -8,20 +8,20 @@ import { verifyActionCenterRecordsPaged } from "./verify-action-center-records-p
 import { writeActionCenterRecords } from "./write-action-center-records"
 
 describe("verifyActionCenterRecordsPaged", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.unstubAllEnvs()
     vi.stubEnv("CLINIQ_ENABLE_REAL_PERSISTENCE", "")
     resetPersistenceAdapterCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.unstubAllEnvs()
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
   it("verifies expected ids across multiple pages", async () => {

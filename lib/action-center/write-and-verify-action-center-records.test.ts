@@ -7,20 +7,20 @@ import { resetPersistenceAdapterCache } from "./persistence/get-adapter"
 import { writeAndVerifyActionCenterRecords } from "./write-and-verify-action-center-records"
 
 describe("writeAndVerifyActionCenterRecords", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.unstubAllEnvs()
     vi.stubEnv("CLINIQ_ENABLE_REAL_PERSISTENCE", "")
     resetPersistenceAdapterCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.unstubAllEnvs()
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
   it("writes and verifies in full mode", async () => {

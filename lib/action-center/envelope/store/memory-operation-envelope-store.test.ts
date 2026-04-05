@@ -56,4 +56,55 @@ describe("MemoryOperationEnvelopeStore", () => {
     await store.reset()
     expect(await store.list()).toEqual([])
   })
+
+  it("supports paged reads", async () => {
+    const store = new MemoryOperationEnvelopeStore()
+
+    await store.append({
+      operationId: "write::2026-04-05T00:00:00.000Z",
+      timestamp: "2026-04-05T00:00:00.000Z",
+      kind: "write",
+      status: "success",
+      summary: {
+        status: "success",
+        ok: true,
+        partial: false,
+        attempted: 1,
+        written: 1,
+      },
+    })
+
+    await store.append({
+      operationId: "verify::2026-04-05T00:00:01.000Z",
+      timestamp: "2026-04-05T00:00:01.000Z",
+      kind: "verify",
+      status: "success",
+      summary: {
+        status: "success",
+        totalExpected: 1,
+        found: 1,
+        missing: [],
+        matched: ["a"],
+        warnings: [],
+        mode: "full",
+      },
+    })
+
+    const first = await store.readPage?.({ limit: 1 })
+
+    expect(first?.records.map((x) => x.operationId)).toEqual([
+      "write::2026-04-05T00:00:00.000Z",
+    ])
+    expect(typeof first?.nextCursor).toBe("string")
+
+    const second = await store.readPage?.({
+      limit: 1,
+      cursor: first?.nextCursor || undefined,
+    })
+
+    expect(second?.records.map((x) => x.operationId)).toEqual([
+      "verify::2026-04-05T00:00:01.000Z",
+    ])
+    expect(second?.nextCursor).toBeNull()
+  })
 })

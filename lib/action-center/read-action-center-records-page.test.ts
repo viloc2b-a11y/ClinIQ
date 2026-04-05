@@ -8,20 +8,20 @@ import { readActionCenterRecordsPage } from "./read-action-center-records-page"
 import { writeActionCenterRecords } from "./write-action-center-records"
 
 describe("readActionCenterRecordsPage", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.unstubAllEnvs()
     vi.stubEnv("CLINIQ_ENABLE_REAL_PERSISTENCE", "")
     resetPersistenceAdapterCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.unstubAllEnvs()
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
   })
 
   it("returns stable nextCursor for paged reads", async () => {

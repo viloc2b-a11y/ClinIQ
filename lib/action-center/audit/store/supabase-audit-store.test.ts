@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 
 import { resetSupabaseClientCache } from "../../../integrations/supabase/client"
-import { SupabaseOperationEnvelopeStore } from "./supabase-operation-envelope-store"
+import { SupabaseActionCenterAuditStore } from "./supabase-audit-store"
 
-describe("SupabaseOperationEnvelopeStore", () => {
+describe("SupabaseActionCenterAuditStore", () => {
   beforeEach(() => {
     delete process.env.SUPABASE_URL
     delete process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -15,20 +15,15 @@ describe("SupabaseOperationEnvelopeStore", () => {
   })
 
   it("is safe without supabase env", async () => {
-    const store = new SupabaseOperationEnvelopeStore()
+    delete process.env.SUPABASE_URL
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    const store = new SupabaseActionCenterAuditStore()
 
     await store.append({
-      operationId: "write::2026-04-05T00:00:00.000Z",
+      id: "a",
+      step: "write_attempt",
       timestamp: "2026-04-05T00:00:00.000Z",
-      kind: "write",
-      status: "success",
-      summary: {
-        status: "success",
-        ok: true,
-        partial: false,
-        attempted: 1,
-        written: 1,
-      },
     })
 
     const rows = await store.list()
@@ -41,7 +36,7 @@ describe("SupabaseOperationEnvelopeStore", () => {
     delete process.env.SUPABASE_URL
     delete process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    const store = new SupabaseOperationEnvelopeStore()
+    const store = new SupabaseActionCenterAuditStore()
 
     const page = await store.readPage?.({ limit: 2 })
 

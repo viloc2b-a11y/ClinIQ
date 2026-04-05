@@ -9,20 +9,20 @@ import { verifyActionCenterRecords } from "./verify-action-center-records"
 import { writeActionCenterRecords } from "./write-action-center-records"
 
 describe("verifyActionCenterRecords", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.unstubAllEnvs()
     vi.stubEnv("CLINIQ_ENABLE_REAL_PERSISTENCE", "")
     resetPersistenceAdapterCache()
-    resetMetrics()
-    resetAuditLog()
+    await resetMetrics()
+    await resetAuditLog()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.unstubAllEnvs()
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetMetrics()
-    resetAuditLog()
+    await resetMetrics()
+    await resetAuditLog()
   })
 
   it("warns when expected ids are missing", async () => {

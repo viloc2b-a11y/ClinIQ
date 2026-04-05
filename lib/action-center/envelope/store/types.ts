@@ -6,8 +6,23 @@ export type OperationEnvelopeStoreListInput = {
   status?: ActionCenterOperationStatus
 }
 
+export type OperationEnvelopeStorePageInput = OperationEnvelopeStoreListInput & {
+  limit?: number
+  cursor?: string
+}
+
+export type OperationEnvelopeStorePageResult = {
+  records: ActionCenterOperationEnvelope[]
+  nextCursor: string | null
+}
+
 export interface OperationEnvelopeStore {
   append(envelope: ActionCenterOperationEnvelope): Promise<void>
-  list(input?: OperationEnvelopeStoreListInput): Promise<ActionCenterOperationEnvelope[]>
+  list(
+    input?: OperationEnvelopeStoreListInput,
+  ): Promise<ActionCenterOperationEnvelope[]>
+  readPage?(
+    input?: OperationEnvelopeStorePageInput,
+  ): Promise<OperationEnvelopeStorePageResult>
   reset(): Promise<void>
 }

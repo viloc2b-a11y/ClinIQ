@@ -1,20 +1,19 @@
-export type ActionCenterAuditEntry = {
-  id: string
-  step: "write_attempt" | "write_success" | "write_fail"
-  timestamp: string
+import { getActionCenterAuditStore } from "./audit/store/get-store"
+import type { ActionCenterAuditEntry } from "./audit/store/types"
+
+export type { ActionCenterAuditEntry } from "./audit/store/types"
+
+export async function appendAudit(entry: ActionCenterAuditEntry): Promise<void> {
+  const store = getActionCenterAuditStore()
+  await store.append(entry)
 }
 
-const auditLog: ActionCenterAuditEntry[] = []
-
-export function appendAudit(entry: ActionCenterAuditEntry): void {
-  auditLog.push({ ...entry })
+export async function getAuditLog(): Promise<ActionCenterAuditEntry[]> {
+  const store = getActionCenterAuditStore()
+  return store.list()
 }
 
-export function getAuditLog(): ActionCenterAuditEntry[] {
-  return [...auditLog]
-}
-
-/** Tests / isolated runs */
-export function resetAuditLog(): void {
-  auditLog.length = 0
+export async function resetAuditLog(): Promise<void> {
+  const store = getActionCenterAuditStore()
+  await store.reset()
 }

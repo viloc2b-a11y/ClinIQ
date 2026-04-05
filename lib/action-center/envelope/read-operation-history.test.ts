@@ -12,8 +12,8 @@ describe("readOperationHistory", () => {
   beforeEach(async () => {
     delete process.env.CLINIQ_ENABLE_REAL_PERSISTENCE
     resetPersistenceAdapterCache()
-    resetAuditLog()
-    resetMetrics()
+    await resetAuditLog()
+    await resetMetrics()
     resetOperationEnvelopeStoreCache()
     await resetOperationEnvelopeHistory()
   })

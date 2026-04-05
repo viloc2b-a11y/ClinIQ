@@ -35,20 +35,20 @@ describe("buildDeterministicId", () => {
 })
 
 describe("writeActionCenterRecords", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.unstubAllEnvs()
     vi.stubEnv("CLINIQ_ENABLE_REAL_PERSISTENCE", "")
     resetPersistenceAdapterCache()
-    resetMetrics()
-    resetAuditLog()
+    await resetMetrics()
+    await resetAuditLog()
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     vi.unstubAllEnvs()
     resetPersistenceAdapterCache()
     resetSupabaseClientCache()
-    resetMetrics()
-    resetAuditLog()
+    await resetMetrics()
+    await resetAuditLog()
   })
 
   it("dedupes by deterministic id", async () => {
@@ -63,10 +63,10 @@ describe("writeActionCenterRecords", () => {
       written: 1,
       status: "success",
     })
-    expect(getMetrics().writesAttempted).toBe(1)
-    expect(getMetrics().writesSuccess).toBe(1)
-    expect(getMetrics().writesFailed).toBe(0)
-    const audit = getAuditLog()
+    expect((await getMetrics()).writesAttempted).toBe(1)
+    expect((await getMetrics()).writesSuccess).toBe(1)
+    expect((await getMetrics()).writesFailed).toBe(0)
+    const audit = await getAuditLog()
     expect(audit.filter((e) => e.step === "write_attempt")).toHaveLength(1)
     expect(audit.filter((e) => e.step === "write_success")).toHaveLength(1)
   })
@@ -104,13 +104,13 @@ describe("writeActionCenterRecords", () => {
     expect(verify.found).toBe(1)
     expect(verify.missing).toEqual([])
 
-    expect(getMetrics()).toEqual({
+    expect(await getMetrics()).toEqual({
       writesAttempted: 1,
       writesSuccess: 1,
       writesFailed: 0,
     })
 
-    expect(getAuditLog().map((x) => x.step)).toEqual(["write_attempt", "write_success"])
+    expect((await getAuditLog()).map((x) => x.step)).toEqual(["write_attempt", "write_success"])
   })
 
   it("verify read-back sees persisted ids", async () => {
@@ -137,7 +137,7 @@ describe("writeActionCenterRecords", () => {
     expect(r.attempted).toBe(1)
     expect(r.written).toBe(0)
     expect(r.status).toBe("failed")
-    expect(getMetrics().writesFailed).toBe(1)
-    expect(getAuditLog().some((e) => e.step === "write_fail")).toBe(true)
+    expect((await getMetrics()).writesFailed).toBe(1)
+    expect((await getAuditLog()).some((e) => e.step === "write_fail")).toBe(true)
   })
 })
