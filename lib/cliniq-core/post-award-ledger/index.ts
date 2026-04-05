@@ -9,6 +9,15 @@ export { generateBillablesFromEvent } from "./billables-from-events"
 export { generateExpectedBillablesFromBudget } from "./expected-billables"
 export type { GenerateExpectedParams } from "./expected-billables"
 export { buildLedger } from "./ledger"
+export {
+  buildLeakageTrace,
+  findMatchingClaimItems,
+  findMatchingLedgerRows,
+  inferReasonFromClaim,
+  normalizeLineCode,
+  normalizeVisitName,
+  sumInvoiceAmountForExpected,
+} from "./build-leakage-trace"
 export { detectRevenueLeakage } from "./leakage"
 export {
   buildExecutionLineFromClaimsLedgerRow,
@@ -34,3 +43,17 @@ export type {
   LedgerEntryStatus,
   RevenueLeakageReport,
 } from "./types"
+export type {
+  LeakageTraceItem,
+  LeakageTraceResult,
+  LeakageTraceSummary,
+} from "./leakage-types"
+export {
+  quantifyRevenueLeakage,
+  quantifyRevenueLeakageWithTrace,
+} from "./quantify-leakage"
+export type {
+  QuantifiedLineLeakage,
+  QuantifiedRevenueLeakageReport,
+  QuantifyRevenueLeakageWithTraceResult,
+} from "./quantify-leakage"

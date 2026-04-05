@@ -1,4 +1,6 @@
 import type { InvoicePackage } from "../claims/types"
+import { buildLeakageTrace } from "./build-leakage-trace"
+import type { LeakageTraceResult } from "./leakage-types"
 import type { ExpectedBillable } from "./types"
 
 export type LeakageStatus = "ok" | "warning" | "critical"
@@ -98,4 +100,36 @@ export function quantifyRevenueLeakage(
     lineBreakdown,
     topLeakers,
   }
+}
+
+export type QuantifyRevenueLeakageWithTraceResult = {
+  /** Unchanged v1 aggregate-by-lineCode report (same as `quantifyRevenueLeakage`). */
+  report: QuantifiedRevenueLeakageReport
+  /** Item-level actionable trace; uses `buildLeakageTrace` with optional ledger/claims. */
+  trace: LeakageTraceResult
+}
+
+/**
+ * Runs existing `quantifyRevenueLeakage` unchanged, plus v2 trace from `buildLeakageTrace`.
+ * Pass `ledgerRows` / `claimItems` / `invoicePackages` when available for richer matching;
+ * otherwise trace uses `[invoice]` only (no claim linkage → mostly `not_generated` per expected row).
+ */
+export function quantifyRevenueLeakageWithTrace(
+  expectedBillables: ExpectedBillable[],
+  invoice: InvoicePackage,
+  options?: {
+    ledgerRows?: any[]
+    claimItems?: any[]
+    /** When omitted, defaults to `[invoice]` so invoice lines participate in trace. */
+    invoicePackages?: any[]
+  },
+): QuantifyRevenueLeakageWithTraceResult {
+  const report = quantifyRevenueLeakage(expectedBillables, invoice)
+  const trace = buildLeakageTrace({
+    expectedBillables,
+    ledgerRows: options?.ledgerRows,
+    claimItems: options?.claimItems,
+    invoicePackages: options?.invoicePackages ?? [invoice],
+  })
+  return { report, trace }
 }
