@@ -1,6 +1,5 @@
-import type {
-  ActionCenterIngestSyncResult,
-} from "../action-center/sync-action-center-from-ingest"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import type { ActionCenterIngestSyncResult } from "../action-center/sync-action-center-from-ingest"
 import { isVisitCompletedEventType } from "../action-center/sync-action-center-from-ingest"
 import { runActionCenterSyncFromRuntime } from "../action-center/run-action-center-sync-from-runtime"
 import { buildClaimItemsFromLedger, buildInvoicePackage } from "../claims/build-claims"
@@ -85,6 +84,42 @@ function emptyInvoicePackage(
 }
 
 /**
+ * Persists expected_billables rows linked to the ingested event.
+ * Non-fatal: failures warn but do not throw or block the ingest response.
+ */
+async function persistExpectedBillables(
+  supabase: SupabaseClient,
+  params: {
+    eventLogId: string
+    studyId: string
+    subjectId: string
+    expectedBillables: ExpectedBillable[]
+  },
+): Promise<void> {
+  const { eventLogId, studyId, subjectId, expectedBillables } = params
+  if (expectedBillables.length === 0) return
+
+  const rows = expectedBillables.map((eb) => ({
+    event_log_id: eventLogId,
+    study_id: studyId,
+    subject_id: subjectId,
+    line_code: eb.lineCode,
+    visit_name: eb.visitName,
+    expected_revenue: eb.expectedRevenue,
+    label: eb.label,
+    status: "pending",
+  }))
+
+  const { error } = await supabase.from("expected_billables").insert(rows)
+  if (error) {
+    console.warn(
+      "[ingestEvent] expected_billables persist warning:",
+      error.message,
+    )
+  }
+}
+
+/**
  * Event/visit ingestion: persists `event_log`, runs billables → ledger → claims → invoice → leakage.
  *
  * **Contract (v1, preserved):**
@@ -94,7 +129,7 @@ function emptyInvoicePackage(
  *   Memory / Supabase persistence adapters are unchanged; routes keep default memory fallback unless env says otherwise.
  */
 export async function ingestEvent(params: {
-  supabase: any
+  supabase: SupabaseClient
   event: IngestEventInput
   expectedBillables: ExpectedBillable[]
   sponsorId?: string
@@ -117,6 +152,14 @@ export async function ingestEvent(params: {
   if (error) {
     throw new Error("Failed to insert event_log: " + error.message)
   }
+
+  // Persist expected_billables linked to this event (non-fatal)
+  await persistExpectedBillables(supabase, {
+    eventLogId: inserted.id as string,
+    studyId: event.studyId,
+    subjectId: event.subjectId,
+    expectedBillables,
+  })
 
   const lineCode = resolveLineCodeForIngest(event, expectedBillables)
 

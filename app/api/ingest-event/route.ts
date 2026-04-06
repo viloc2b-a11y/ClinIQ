@@ -2,8 +2,27 @@ import { createClient } from "@supabase/supabase-js"
 
 import { ingestEvent } from "@/lib/cliniq-core/events/ingest-event"
 import type { ExpectedBillable } from "@/lib/cliniq-core/post-award-ledger/types"
+import { createServerSupabaseClient } from "@/supabase/server"
 
 export async function POST(req: Request) {
+  // Auth guard (production): require an authenticated Supabase user session (cookie-based).
+  // This route uses service-role for writes; don't allow anonymous access in prod.
+  if (process.env.NODE_ENV === "production") {
+    try {
+      const authClient = await createServerSupabaseClient()
+      const { data, error } = await authClient.auth.getUser()
+      if (error || !data.user) {
+        return Response.json(
+          { ok: false, error: "Unauthorized" },
+          { status: 401 },
+        )
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e)
+      return Response.json({ ok: false, error: message }, { status: 500 })
+    }
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
