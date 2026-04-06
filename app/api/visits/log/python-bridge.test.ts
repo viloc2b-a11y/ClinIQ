@@ -29,7 +29,7 @@ describe("runPythonLogVisit", () => {
   it("writes JSON payload to stdin (snake_case)", async () => {
     const mocked = vi.mocked(spawn)
     mocked.mockImplementation(() =>
-      mockChild(
+      (mockChild(
         JSON.stringify({
           ok: true,
           study_id: "S-1",
@@ -39,7 +39,7 @@ describe("runPythonLogVisit", () => {
           events_emitted: 1,
           message: "ok",
         }),
-      ) as ReturnType<typeof spawn>,
+      ) as unknown) as ReturnType<typeof spawn>,
     )
 
     const out = await runPythonLogVisit("/proj", {
@@ -70,7 +70,7 @@ describe("runPythonLogVisit", () => {
 
   it("returns ok false when Python prints error JSON", async () => {
     vi.mocked(spawn).mockImplementation(() =>
-      mockChild(JSON.stringify({ ok: false, error: "bad" }), 1) as ReturnType<
+      (mockChild(JSON.stringify({ ok: false, error: "bad" }), 1) as unknown) as ReturnType<
         typeof spawn
       >,
     )
@@ -88,7 +88,7 @@ describe("runPythonLogVisit", () => {
 
   it("returns error when stdout is not valid JSON", async () => {
     vi.mocked(spawn).mockImplementation(
-      () => mockChild("not-json", 0) as ReturnType<typeof spawn>,
+      () => (mockChild("not-json", 0) as unknown) as ReturnType<typeof spawn>,
     )
 
     const out = await runPythonLogVisit("/proj", {

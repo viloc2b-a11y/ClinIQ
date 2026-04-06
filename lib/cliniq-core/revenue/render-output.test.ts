@@ -62,10 +62,9 @@ describe("STEP 84 — Render Layer + Demo Output Surface", () => {
         prioritizedActions: [
           {
             id: "a1",
-            title: "Missing visit billing",
+            leakageValue: 1200,
             estimatedValue: 1200,
             priorityScore: 1200,
-            leakageValue: 1200,
           },
         ],
         summary: {
@@ -103,6 +102,14 @@ describe("STEP 84 — Render Layer + Demo Output Surface", () => {
       report: {
         data: {
           headline: "Recovered revenue visibility: $9800 captured, $2650 at risk",
+          totalRevenueCaptured: 9800,
+          totalRevenueAtRisk: 2650,
+          totalRevenueOpportunity: 12450,
+          revenueProtectionScore: 78,
+          recoveryRate: 79,
+          totalInvoicePackages: 3,
+          leakageItems: 5,
+          topFindings: [],
         },
         summary: {
           captured: 9800,

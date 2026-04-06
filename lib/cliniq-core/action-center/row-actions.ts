@@ -27,6 +27,7 @@ export function getRowActions(params: {
     | "collect_documentation"
     | "check_event_mapping"
     | "manual_review"
+    | "missing_billable"
 }): ActionCenterRowActionDefinition[] {
   const isResolved = params.status === "resolved"
 

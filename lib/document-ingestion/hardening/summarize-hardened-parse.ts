@@ -1,4 +1,4 @@
-import type { HardenedParseResult } from "./types"
+import type { HardenedParseResult, HardenedRecord } from "./types"
 import { scoreRecordConfidence } from "./score-record-confidence"
 
 export function summarizeHardenedParse(params: {

@@ -166,7 +166,7 @@ describe("runEventStoreControlledWrite", () => {
       writer,
     })
     expect(received).toHaveLength(1)
-    expect((received as Record<string, unknown>[])[0]).toEqual(good)
+    expect((received as unknown as Record<string, unknown>[])[0]).toEqual(good)
     expect(out.summary.rejectedCount).toBe(1)
   })
 

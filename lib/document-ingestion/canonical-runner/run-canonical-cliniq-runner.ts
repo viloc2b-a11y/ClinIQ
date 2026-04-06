@@ -118,8 +118,7 @@ export function runCanonicalClinIQRunner(params: {
     pipeline.summary.bridgeStatus === "ready" || pipeline.summary.bridgeStatus === "partial"
 
   const actionCenterReady =
-    pipeline.summary.actionCenterStatus === "persisted" ||
-    pipeline.summary.actionCenterStatus === "partial"
+    pipeline.summary.actionCenterStatus === "persisted"
 
   const postPersistenceReady =
     pipeline.summary.postPersistenceStatus === "ready" ||

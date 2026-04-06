@@ -4,6 +4,11 @@ import { resetSupabaseClientCache } from "../../integrations/supabase/client"
 import { resetAuditLog } from "../audit-log"
 import { resetMetrics } from "../metrics"
 import { resetPersistenceAdapterCache } from "../persistence/get-adapter"
+import type {
+  ActionCenterVerifySummary,
+  ActionCenterWriteAndVerifySummary,
+  ActionCenterWriteSummary,
+} from "../summary/types"
 import {
   verifyActionCenterRecordsWithEnvelope,
   writeActionCenterRecordsWithEnvelope,
@@ -47,7 +52,7 @@ describe("action center envelope builders", () => {
 
     expect(result.kind).toBe("write")
     expect(result.status).toBe("success")
-    expect(result.summary.written).toBe(1)
+    expect((result.summary as ActionCenterWriteSummary).written).toBe(1)
 
     const history = await readOperationHistory()
     expect(history.length).toBe(1)
@@ -75,7 +80,7 @@ describe("action center envelope builders", () => {
 
     expect(result.kind).toBe("verify")
     expect(result.status).toBe("success")
-    expect(result.summary.matched).toEqual(["action_item::A"])
+    expect((result.summary as ActionCenterVerifySummary).matched).toEqual(["action_item::A"])
   })
 
   it("wraps write_and_verify summary in envelope", async () => {
@@ -94,6 +99,6 @@ describe("action center envelope builders", () => {
 
     expect(result.kind).toBe("write_and_verify")
     expect(result.status).toBe("success")
-    expect(result.summary.ok).toBe(true)
+    expect((result.summary as ActionCenterWriteAndVerifySummary).ok).toBe(true)
   })
 })

@@ -138,8 +138,7 @@ export function runCanonicalDemo(params: {
     pipeline.summary.orchestrationStatus === "partial"
 
   const actionCenterReady =
-    pipeline.summary.actionCenterStatus === "persisted" ||
-    pipeline.summary.actionCenterStatus === "partial"
+    pipeline.summary.actionCenterStatus === "persisted"
 
   const recordsReady = operationalSummary?.recordsReady === true
   const metricsReady =

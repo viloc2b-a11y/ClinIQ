@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-
 const nextConfig: NextConfig = {
   // Pins Turbopack root to this app when a parent dir has another package-lock.json
   turbopack: {
@@ -29,5 +28,4 @@ const nextConfig: NextConfig = {
     return config;
   },
 };
-
 export default nextConfig;

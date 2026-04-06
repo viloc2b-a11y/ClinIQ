@@ -1,11 +1,10 @@
-import { DashboardClient } from "@/components/dashboard/DashboardClient"
-import { buildArDemoScenario } from "@/lib/cliniq-core/ar"
+import { OperationalDashboardClient } from "@/components/execution/OperationalDashboardClient"
 
-const DEMO_AS_OF = "2026-06-15"
-
-export default function DashboardPage() {
-  const initialArDemo = buildArDemoScenario(DEMO_AS_OF)
-  return (
-    <DashboardClient asOfDate={DEMO_AS_OF} initialArDemo={initialArDemo} />
-  )
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams?: { study_key?: string }
+}) {
+  const initialStudyKey = (searchParams?.study_key ?? "STUDY-1").trim()
+  return <OperationalDashboardClient initialStudyKey={initialStudyKey} />
 }

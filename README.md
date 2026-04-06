@@ -77,7 +77,7 @@ npm run backend:dev
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000). See [`backend/README.md`](backend/README.md) for protocol/contract features.
 
 **3 — Database (optional)**  
-To persist Action Center or related tables on your Postgres/Supabase instance, apply the SQL under `supabase/schema/` and `supabase/migrations/` using Studio or `psql`. Keep secrets in `.env.local` only (never commit).
+To persist Action Center or related tables on your Postgres/Supabase instance, apply the SQL under `supabase/schema/` and `supabase/migrations/` using Studio, `psql`, or the Supabase CLI (`supabase/config.toml` enables the full local stack; migrations run in timestamp order). The migration `20260405180000_cliniq_events_action_center_and_event_log.sql` creates `event_log`, `cliniq_events`, Action Center adapter tables, and `cliniq_action_*` without colliding with the fee-template engine tables. Do not mix `supabase/schema/cliniq_core_v1.sql` or `cost_truth.sql` on the same database as the fee-template migrations (conflicting `billable_instances` / pricing tables). Keep secrets in `.env.local` only (never commit).
 
 **Sanity check:** `npm test`
 
