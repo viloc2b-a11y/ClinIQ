@@ -1,6 +1,5 @@
-import type {
-  ActionCenterIngestSyncResult,
-} from "../action-center/sync-action-center-from-ingest"
+import type { SupabaseClient } from "@supabase/supabase-js"
+import type { ActionCenterIngestSyncResult } from "../action-center/sync-action-center-from-ingest"
 import { isVisitCompletedEventType } from "../action-center/sync-action-center-from-ingest"
 import { runActionCenterSyncFromRuntime } from "../action-center/run-action-center-sync-from-runtime"
 import { buildClaimItemsFromLedger, buildInvoicePackage } from "../claims/build-claims"
@@ -11,19 +10,8 @@ import type { QuantifiedRevenueLeakageReport } from "../post-award-ledger/quanti
 import { quantifyRevenueLeakage } from "../post-award-ledger/quantify-leakage"
 import type { BillableInstance, EventLog, ExpectedBillable } from "../post-award-ledger/types"
 
-export type {
-  ActionCenterIngestSyncResult,
-  ActionCenterSyncCounts,
-  ActionCenterSyncMetadata,
-} from "../action-center/sync-action-center-from-ingest"
+export type { ActionCenterIngestSyncResult, ActionCenterSyncCounts, ActionCenterSyncMetadata } from "../action-center/sync-action-center-from-ingest"
 
-/**
- * Resolved value when `ingestEvent` completes (Supabase `event` row shape is driver-specific).
- *
- * **v1 — Action Center is non-atomic with core ingest:** sync runs in the same call after financial
- * outputs exist. `actionCenterSync.ok === false` means write-through failed but core artifacts were
- * still produced; callers should treat it as a warning, not rollback. Omitted when event type skips sync.
- */
 export type IngestEventResult = {
   event: Record<string, unknown>
   billables: BillableInstance[]
@@ -31,7 +19,6 @@ export type IngestEventResult = {
   claimItems: ClaimItem[]
   invoice: InvoicePackage
   leakage: QuantifiedRevenueLeakageReport
-  /** `visit_completed` only: `{ ok: true, counts }` or `{ ok: false, error }` (warning, not thrown). */
   actionCenterSync?: ActionCenterIngestSyncResult
 }
 
@@ -45,19 +32,13 @@ export interface IngestEventInput {
 
 const DEFAULT_SPONSOR_ID = "SP-DEFAULT"
 
-/**
- * Maps ingest payload → engine lineCode without changing core billables logic.
- * v1: expected rows whose visitName matches the event; tie-break by lineCode (asc).
- * If none match and exactly one expected row exists, use that lineCode.
- */
 export function resolveLineCodeForIngest(
   event: IngestEventInput,
   expectedBillables: ExpectedBillable[],
 ): string {
   const matches = expectedBillables.filter((e) => e.visitName === event.visitName)
   if (matches.length > 0) {
-    return [...matches].sort((a, b) => a.lineCode.localeCompare(b.lineCode))[0]
-      .lineCode
+    return [...matches].sort((a, b) => a.lineCode.localeCompare(b.lineCode))[0].lineCode
   }
   if (expectedBillables.length === 1) {
     return expectedBillables[0].lineCode
@@ -65,10 +46,7 @@ export function resolveLineCodeForIngest(
   return ""
 }
 
-function emptyInvoicePackage(
-  event: IngestEventInput,
-  sponsorId: string,
-): InvoicePackage {
+function emptyInvoicePackage(event: IngestEventInput, sponsorId: string): InvoicePackage {
   const day = event.eventDate.slice(0, 10)
   return {
     schemaVersion: "1.0",
@@ -85,16 +63,43 @@ function emptyInvoicePackage(
 }
 
 /**
- * Event/visit ingestion: persists `event_log`, runs billables → ledger → claims → invoice → leakage.
+ * Persists expected_billables rows linked to the ingested event.
+ * Non-fatal: failures warn but do not throw or block the ingest response.
+ */
+async function persistExpectedBillables(
+  supabase: SupabaseClient,
+  eventLogId: string,
+  studyId: string,
+  subjectId: string,
+  expectedBillables: ExpectedBillable[],
+): Promise<void> {
+  if (expectedBillables.length === 0) return
+  const rows = expectedBillables.map((eb) => ({
+    event_log_id: eventLogId,
+    study_id: studyId,
+    subject_id: subjectId,
+    line_code: eb.lineCode,
+    visit_name: eb.visitName,
+    expected_revenue: eb.expectedRevenue,
+    label: eb.label,
+    status: "pending",
+  }))
+  const { error } = await supabase.from("expected_billables").insert(rows)
+  if (error) {
+    console.warn("[ingestEvent] expected_billables persist warning:", error.message)
+  }
+}
+
+/**
+ * Event/visit ingestion: persists event_log + expected_billables,
+ * runs billables -> ledger -> claims -> invoice -> leakage.
  *
- * **Contract (v1, preserved):**
- * - **Core failure** (DB insert or earlier pipeline error) → throws; no Action Center side effects after throw.
- * - **Core success** → same return fields as before ingest existed, plus optional `actionCenterSync`.
- * - **Action Center sync failure** (after core success) → does **not** throw; `actionCenterSync: { ok: false, error }`.
- *   Memory / Supabase persistence adapters are unchanged; routes keep default memory fallback unless env says otherwise.
+ * Contract (v1):
+ * - Core failure (DB insert) -> throws
+ * - Action Center sync failure -> non-fatal, returns actionCenterSync: { ok: false }
  */
 export async function ingestEvent(params: {
-  supabase: any
+  supabase: SupabaseClient
   event: IngestEventInput
   expectedBillables: ExpectedBillable[]
   sponsorId?: string
@@ -117,6 +122,15 @@ export async function ingestEvent(params: {
   if (error) {
     throw new Error("Failed to insert event_log: " + error.message)
   }
+
+  // Persist expected_billables linked to this event (non-fatal)
+  await persistExpectedBillables(
+    supabase,
+    inserted.id as string,
+    event.studyId,
+    event.subjectId,
+    expectedBillables,
+  )
 
   const lineCode = resolveLineCodeForIngest(event, expectedBillables)
 
@@ -142,17 +156,11 @@ export async function ingestEvent(params: {
   })
 
   const claimItems = buildClaimItemsFromLedger(ledgerRows)
-
   const invoicePackages = buildInvoicePackage({ claimItems })
-  const invoice: InvoicePackage =
-    invoicePackages[0] ?? emptyInvoicePackage(event, sponsorId)
-
+  const invoice: InvoicePackage = invoicePackages[0] ?? emptyInvoicePackage(event, sponsorId)
   const leakage = quantifyRevenueLeakage(expectedBillables, invoice)
+  const packagesForLeakage = invoicePackages.length > 0 ? invoicePackages : [invoice]
 
-  const packagesForLeakage =
-    invoicePackages.length > 0 ? invoicePackages : [invoice]
-
-  /** After financial outputs exist: `visit_completed` → {@link runActionCenterSyncFromRuntime} → write-through. */
   let actionCenterSync: ActionCenterIngestSyncResult | undefined
   if (isVisitCompletedEventType(event.eventType)) {
     try {
@@ -174,13 +182,5 @@ export async function ingestEvent(params: {
     }
   }
 
-  return {
-    event: inserted as Record<string, unknown>,
-    billables,
-    ledgerRows,
-    claimItems,
-    invoice,
-    leakage,
-    actionCenterSync,
-  }
+  return { event: inserted as Record<string, unknown>, billables, ledgerRows, claimItems, invoice, leakage, actionCenterSync }
 }
