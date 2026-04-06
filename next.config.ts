@@ -1,10 +1,18 @@
 import type { NextConfig } from "next";
-
 const nextConfig: NextConfig = {
-  // If a parent directory has another package-lock.json, this pins the Turbopack root to this app.
   turbopack: {
     root: process.cwd(),
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        os: false,
+      };
+    }
+    return config;
+  },
 };
-
 export default nextConfig;
