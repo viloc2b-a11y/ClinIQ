@@ -5,7 +5,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
-  // Fix node:fs errors caused by pdfjs-dist and xlsx being bundled client-side
+  // Fix node:fs errors caused by pdfjs-dist and xlsx being bundled client-side.
+  // These packages use Node.js built-ins — they must only run server-side.
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
