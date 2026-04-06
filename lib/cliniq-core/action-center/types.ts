@@ -24,6 +24,7 @@ export type ActionType =
   | "collect_documentation"
   | "check_event_mapping"
   | "manual_review"
+  | "missing_billable"
 
 export interface ActionCenterItem {
   id: string
@@ -59,6 +60,9 @@ export interface ActionCenterItem {
   billableInstanceId?: string
   invoicePeriodStart?: string
   invoicePeriodEnd?: string
+
+  /** Optional JSON metadata persisted to `cliniq_action_items.metadata`. */
+  metadata?: Record<string, unknown>
 }
 
 export interface ActionCenterSummary {

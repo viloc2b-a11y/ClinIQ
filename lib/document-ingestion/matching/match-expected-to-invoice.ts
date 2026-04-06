@@ -93,7 +93,7 @@ export function numbersEqual(a: number, b: number, tolerance: number): boolean {
   return Math.abs(a - b) <= tolerance
 }
 
-function isPresentNumber(n: number | null): boolean {
+function isPresentNumber(n: number | null): n is number {
   return n !== null && Number.isFinite(n)
 }
 

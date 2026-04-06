@@ -1,4 +1,5 @@
 export interface ActionItemRow {
+  [key: string]: unknown
   id: string
   study_id: string
   sponsor_id: string | null
@@ -35,6 +36,7 @@ export interface ActionItemRow {
 }
 
 export interface ActionItemEventRow {
+  [key: string]: unknown
   id: string
   action_item_id: string
   event_type: string

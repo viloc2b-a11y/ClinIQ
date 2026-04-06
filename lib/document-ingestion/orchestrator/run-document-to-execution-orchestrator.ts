@@ -70,7 +70,7 @@ export function runDocumentToExecutionOrchestrator(params: {
   }
 
   const actionSeeds = buildActionCenterSeeds({
-    coreBinding,
+    coreBinding: coreBinding as unknown as Parameters<typeof buildActionCenterSeeds>[0]["coreBinding"],
   })
 
   const orchestrator = evaluateOrchestratorStatus({

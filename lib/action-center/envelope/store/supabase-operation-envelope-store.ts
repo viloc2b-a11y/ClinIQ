@@ -1,5 +1,10 @@
 import { getSupabaseClient } from "../../../integrations/supabase/client"
 import type { ActionCenterOperationEnvelope } from "../types"
+import type {
+  ActionCenterVerifySummary,
+  ActionCenterWriteAndVerifySummary,
+  ActionCenterWriteSummary,
+} from "../../summary/types"
 import {
   decodeOperationHistoryCursor,
   encodeOperationHistoryCursor,
@@ -77,15 +82,38 @@ export class SupabaseOperationEnvelopeStore implements OperationEnvelopeStore {
       return { records: [], nextCursor: null }
     }
 
-    let rows: ActionCenterOperationEnvelope[] = data.map(
-      (row: Record<string, unknown>) => ({
-        operationId: String(row.operation_id ?? ""),
-        timestamp: row.timestamp != null ? String(row.timestamp) : "",
-        kind: row.kind as ActionCenterOperationEnvelope["kind"],
-        status: row.status as ActionCenterOperationEnvelope["status"],
-        summary: row.summary,
-      }),
-    )
+    let rows: ActionCenterOperationEnvelope[] = data.map((row: Record<string, unknown>) => {
+      const operationId = String(row.operation_id ?? "")
+      const timestamp = row.timestamp != null ? String(row.timestamp) : ""
+      const status = row.status as ActionCenterOperationEnvelope["status"]
+      const kind = String(row.kind ?? "")
+
+      if (kind === "write") {
+        return {
+          operationId,
+          timestamp,
+          kind,
+          status,
+          summary: (row.summary ?? {}) as ActionCenterWriteSummary,
+        }
+      }
+      if (kind === "verify") {
+        return {
+          operationId,
+          timestamp,
+          kind,
+          status,
+          summary: (row.summary ?? {}) as ActionCenterVerifySummary,
+        }
+      }
+      return {
+        operationId,
+        timestamp,
+        kind: "write_and_verify",
+        status,
+        summary: (row.summary ?? {}) as ActionCenterWriteAndVerifySummary,
+      }
+    })
 
     if (decoded) {
       rows = rows.filter((row) => {

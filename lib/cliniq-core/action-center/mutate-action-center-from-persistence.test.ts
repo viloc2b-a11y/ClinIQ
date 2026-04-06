@@ -80,7 +80,10 @@ describe("mutateActionCenterFromPersistence (STEP 8)", () => {
       error: "invalid_request",
     })
     expect(
-      await mutateActionCenterFromPersistence({ itemId: "x", action: "  " }),
+      await mutateActionCenterFromPersistence({
+        itemId: "x",
+        action: ("  " as unknown) as Parameters<typeof mutateActionCenterFromPersistence>[0]["action"],
+      }),
     ).toEqual({
       ok: false,
       error: "invalid_request",

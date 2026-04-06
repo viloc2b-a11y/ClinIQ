@@ -13,7 +13,7 @@ import {
   NEGOTIATION_ENGINE_INPUT_SESSION_KEY,
   negotiationPackageToJson,
   type NegotiationStrategy,
-} from "@/lib/cliniq-core/negotiation"
+} from "@/lib/cliniq-core/negotiation/client"
 
 export default function NegotiationEnginePage() {
   const [engineInput, setEngineInput] = useState<NegotiationEngineInput | null>(

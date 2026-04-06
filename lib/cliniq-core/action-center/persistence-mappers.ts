@@ -25,7 +25,7 @@ export function mapActionCenterItemToRow(item: ActionCenterItem): ActionItemRow 
     invoice_period_start: item.invoicePeriodStart ?? null,
     invoice_period_end: item.invoicePeriodEnd ?? null,
     source_hash: null,
-    metadata: {},
+    metadata: item.metadata ?? {},
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     resolved_at: item.status === "resolved" ? new Date().toISOString() : null,
@@ -55,5 +55,9 @@ export function mapRowToActionCenterItem(row: ActionItemRow): ActionCenterItem {
     billableInstanceId: row.billable_instance_id ?? undefined,
     invoicePeriodStart: row.invoice_period_start ?? undefined,
     invoicePeriodEnd: row.invoice_period_end ?? undefined,
+    metadata:
+      row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)
+        ? (row.metadata as Record<string, unknown>)
+        : undefined,
   }
 }

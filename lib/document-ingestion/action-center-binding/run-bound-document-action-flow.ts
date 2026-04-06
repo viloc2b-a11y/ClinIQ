@@ -35,7 +35,7 @@ export function runBoundDocumentActionFlow(params: {
   })
 
   const actionCenter = runActionCenterBinding({
-    orchestration,
+    orchestration: orchestration as unknown as Parameters<typeof runActionCenterBinding>[0]["orchestration"],
     persistActionCenterItems: params.persistActionCenterItems,
     verifyPersistedItems: params.verifyPersistedItems,
   })

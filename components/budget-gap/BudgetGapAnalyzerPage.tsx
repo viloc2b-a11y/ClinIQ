@@ -58,7 +58,7 @@ import {
   type NegotiationEngineInput,
   type SponsorBudgetLine,
 } from "@/lib/cliniq-core/budget-gap"
-import { NEGOTIATION_ENGINE_INPUT_SESSION_KEY } from "@/lib/cliniq-core/negotiation"
+import { NEGOTIATION_ENGINE_INPUT_SESSION_KEY } from "@/lib/cliniq-core/negotiation/client"
 import { cn } from "@/lib/utils"
 
 type AnalysisPhase = "idle" | "analyzing" | "ready" | "error"

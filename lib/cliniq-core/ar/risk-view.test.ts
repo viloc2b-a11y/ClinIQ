@@ -254,7 +254,7 @@ describe("buildInvoiceRiskView", () => {
           studyId: "study-1",
           dueDate: "2026-01-01",
           invoiceOpenBalance: 40,
-          bucket: "1_30",
+          bucket: "1_30" as const,
           daysPastDue: 10,
         },
         {
@@ -263,7 +263,7 @@ describe("buildInvoiceRiskView", () => {
           studyId: "study-1",
           dueDate: "2026-01-01",
           invoiceOpenBalance: 200,
-          bucket: "1_30",
+          bucket: "1_30" as const,
           daysPastDue: 10,
         },
       ],

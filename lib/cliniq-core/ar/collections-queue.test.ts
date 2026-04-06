@@ -35,7 +35,6 @@ function riskRow(
     agingBucket: p.agingBucket ?? "current",
     daysPastDue: p.daysPastDue ?? 0,
     daysSinceLastPayment: p.daysSinceLastPayment,
-    riskLevel: p.riskLevel,
     riskReasons: p.riskReasons ?? [],
     ...p,
   }
