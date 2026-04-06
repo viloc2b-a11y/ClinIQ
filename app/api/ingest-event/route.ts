@@ -1,18 +1,31 @@
 import { createClient } from "@supabase/supabase-js"
-
 import { ingestEvent } from "@/lib/cliniq-core/events/ingest-event"
 import type { ExpectedBillable } from "@/lib/cliniq-core/post-award-ledger/types"
 
+/**
+ * POST /api/ingest-event
+ *
+ * Auth: Bearer token via Authorization header.
+ * Set CLINIQ_API_SECRET in env vars (Dokploy). If unset, route is open (dev only).
+ *
+ * Body: { event: IngestEventInput, expectedBillables: ExpectedBillable[] }
+ */
 export async function POST(req: Request) {
+  // Auth guard
+  const secret = process.env.CLINIQ_API_SECRET
+  if (secret) {
+    const auth = req.headers.get("authorization") ?? ""
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : ""
+    if (token !== secret) {
+      return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 })
+    }
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!url || !key) {
     return Response.json(
-      {
-        ok: false,
-        error:
-          "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY",
-      },
+      { ok: false, error: "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" },
       { status: 500 },
     )
   }
@@ -24,12 +37,9 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, error: "Invalid JSON body" }, { status: 400 })
   }
 
-  const b = body as {
-    event?: unknown
-    expectedBillables?: unknown
-  }
-
+  const b = body as { event?: unknown; expectedBillables?: unknown }
   const ev = b.event as Record<string, unknown> | undefined
+
   if (
     !ev ||
     typeof ev.studyId !== "string" ||
@@ -39,11 +49,7 @@ export async function POST(req: Request) {
     typeof ev.eventDate !== "string"
   ) {
     return Response.json(
-      {
-        ok: false,
-        error:
-          "Body must include event: { studyId, subjectId, visitName, eventType, eventDate }",
-      },
+      { ok: false, error: "Body must include event: { studyId, subjectId, visitName, eventType, eventDate }" },
       { status: 400 },
     )
   }
@@ -69,8 +75,6 @@ export async function POST(req: Request) {
       },
       expectedBillables: b.expectedBillables as ExpectedBillable[],
     })
-    // v1 contract: HTTP 200 + { ok: true, ...ingest } when ingest resolves. Core failure → catch below (500).
-    // Action Center sync failure is non-fatal: result.actionCenterSync?.ok === false (warning metadata).
     return Response.json({ ok: true, ...result })
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
