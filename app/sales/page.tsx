@@ -2,7 +2,7 @@ import { ClinIQPresentation } from "@/components/marketing/ClinIQPresentation"
 import type { Metadata } from "next"
 
 export const metadata: Metadata = {
-  title: "ClinIQ — Product tour",
+  title: "ClinIQ Financial — Product tour",
   description:
     "Product map, demo script, and technical reference for sponsors and site leadership.",
 }

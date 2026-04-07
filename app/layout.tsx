@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ClinIQ",
-  description: "Clinical site operations — internal application",
+  title: "ClinIQ Financial",
+  description: "Clinical site financial operations — budget, negotiation, and revenue",
 };
 
 export default function RootLayout({
