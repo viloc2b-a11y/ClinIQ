@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { bootstrapMemoryActionCenter } from "@/lib/cliniq-core/action-center/bootstrap-memory-action-center"
 import { getActionCenterFromPersistence } from "@/lib/cliniq-core/action-center/get-action-center-from-persistence"
 
