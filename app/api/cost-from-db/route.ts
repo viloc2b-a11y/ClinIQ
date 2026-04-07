@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from "@supabase/supabase-js"
 import { calculateProcedureCost } from "@/lib/cliniq-core/cost-truth/cost-engine"
 import type {
