@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from "@supabase/supabase-js"
 import { ingestEvent } from "@/lib/cliniq-core/events/ingest-event"
 import type { ExpectedBillable } from "@/lib/cliniq-core/post-award-ledger/types"
