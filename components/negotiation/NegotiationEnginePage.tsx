@@ -296,12 +296,18 @@ export default function NegotiationEnginePage() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl space-y-4 p-4">
-      <h1 className="font-semibold text-lg">Negotiation engine (Module 4)</h1>
-      <p className="text-muted-foreground text-sm">
-        After a Budget Gap run, choose “Sponsor counteroffer (Module 4)” on the gap page to load{" "}
-        <code className="text-xs">NegotiationEngineInput</code> here, or paste JSON / load mock.
-      </p>
+    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 pb-16 sm:px-6">
+      <header className="border-b border-border/60 pb-6">
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Negotiation</p>
+        <h1 className="text-foreground mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
+          Counteroffer engine (Module 4)
+        </h1>
+        <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-relaxed">
+          After a Budget Gap run, choose “Sponsor counteroffer (Module 4)” on the gap page to load{" "}
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">NegotiationEngineInput</code> here, or
+          paste JSON / load mock.
+        </p>
+      </header>
 
       <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={() => setEngineInput(buildHoustonMetabolicNegotiationInput())}>

@@ -111,15 +111,20 @@ export function DashboardClient({ asOfDate, initialArDemo }: DashboardClientProp
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="border-b border-border bg-card px-4 py-3">
-        <h1 className="text-lg font-semibold">Documents and collections</h1>
-        <p className="text-xs text-muted-foreground">
-          Upload and preview on the left; collections and risk on the right (demo data, as of{" "}
-          <span className="font-mono">{asOfDate}</span>).
-        </p>
+      <header className="border-b border-border/60 bg-background/80 px-4 py-5 backdrop-blur-sm sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
+            AR &amp; collections
+          </p>
+          <h1 className="text-lg font-semibold tracking-tight sm:text-xl">Documents and collections</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground leading-relaxed">
+            Upload and preview on the left; collections and risk on the right (demo data, as of{" "}
+            <span className="font-mono text-foreground/90">{asOfDate}</span>).
+          </p>
+        </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-12 lg:gap-3">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-4 p-4 sm:px-6 lg:grid-cols-12 lg:gap-3 lg:py-6">
         <div className="lg:col-span-3">
           <DocumentIngestPanel
             documentType={documentType}

@@ -342,9 +342,9 @@ export default function BudgetGapAnalyzerPage() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-6xl flex-col gap-8 px-4 py-8 md:px-6">
-      <header className="space-y-2">
+      <header className="space-y-2 border-b border-border/60 pb-6">
         <p className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
-          Module 3 · Budget gap
+          Analysis · Budget gap
         </p>
         <h1 className="font-semibold text-2xl tracking-tight md:text-3xl">
           Budget Gap Analyzer

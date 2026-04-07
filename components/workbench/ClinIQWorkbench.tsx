@@ -24,10 +24,8 @@ import {
   FileStack,
   LayoutDashboard,
   LineChart,
-  Presentation,
   Receipt,
   Scale,
-  Sparkles,
   Workflow,
 } from "lucide-react"
 import Link from "next/link"
@@ -186,48 +184,22 @@ export function ClinIQWorkbench({
   ]
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50/80 via-background to-background">
+    <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-40 border-b border-border/80 bg-background/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <Sparkles className="size-5" aria-hidden />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold tracking-tight">ClinIQ — Workbench</h1>
-              <p className="text-xs text-muted-foreground">
-                Documents · site · execution · analysis · negotiation
-              </p>
-            </div>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-2.5 sm:px-6">
+          <div>
+            <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
+              Workbench
+            </p>
+            <p className="text-muted-foreground text-xs">Documents · site · execution · analysis · negotiation</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="font-mono text-xs">
-              Study: {studyKey}
-            </Badge>
-            <Link
-              href="/import"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "inline-flex gap-1.5")}
-            >
-              Import
-            </Link>
-            <Link
-              href="/admin"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "inline-flex gap-1.5")}
-            >
-              Admin
-            </Link>
-            <Link
-              href="/sales"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "inline-flex gap-1.5")}
-            >
-              <Presentation className="size-3.5" />
-              Product tour
-            </Link>
-          </div>
+          <Badge variant="secondary" className="font-mono text-xs">
+            Study: {studyKey}
+          </Badge>
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-0 md:flex-row md:gap-6 md:px-6 md:py-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-0 md:flex-row md:gap-6 md:px-6 md:py-6">
         <aside className="border-b border-border bg-card/50 md:w-52 md:shrink-0 md:border-b-0 md:border-r md:bg-transparent md:pr-2 md:pt-0">
           <nav
             className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-visible md:p-0"

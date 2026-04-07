@@ -262,17 +262,17 @@ export function ImportPageClient() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-8">
-      <div>
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6">
+      <header className="border-b border-border/60 pb-6">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Multiformat import
+          Data · Multiformat import
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight">Import budget / contract</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Import budget / contract</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Upload Excel, PDF, or Word. Parsing is best-effort by format; you must review and correct
           lines before analysis. Nothing is finalized until you confirm.
         </p>
-      </div>
+      </header>
 
       <Card>
         <CardHeader>
