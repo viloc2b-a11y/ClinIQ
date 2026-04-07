@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["pdf-parse", "mammoth"],
   // Pins Turbopack root to this app when a parent dir has another package-lock.json
   turbopack: {
     root: process.cwd(),

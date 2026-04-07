@@ -19,15 +19,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
-export type PlaceholderStructuredOutput = {
-  type: string
-  status: string
-  notes: string
-}
-
 type StructuredOutputPanelProps = {
+  asOfDate: string
   demoData: ArDemoScenarioResult | null
-  structuredOutput: PlaceholderStructuredOutput | null
   onQueueRowClick: (invoiceId: string, recommendedAction: string) => void
 }
 
@@ -39,9 +33,18 @@ function money(n: number) {
   }).format(n)
 }
 
+function formatAsOfLabel(isoDate: string) {
+  const d = new Date(`${isoDate}T12:00:00`)
+  if (Number.isNaN(d.getTime())) return isoDate
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "long",
+    timeZone: "UTC",
+  }).format(d)
+}
+
 export function StructuredOutputPanel({
+  asOfDate,
   demoData,
-  structuredOutput,
   onQueueRowClick,
 }: StructuredOutputPanelProps) {
   const sortedQueue = demoData
@@ -52,22 +55,22 @@ export function StructuredOutputPanel({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* SECTION A — REAL */}
-      <Card className="border-emerald-500/35">
+      <Card className="border-border/80 shadow-sm">
         <CardHeader className="border-b border-border">
           <div className="flex flex-wrap items-center gap-2">
-            <CardTitle className="text-base">AR operational output</CardTitle>
-            <Badge variant="success">REAL — Module 6 + risk + queue + summary</Badge>
+            <CardTitle className="text-base">Collections & risk</CardTitle>
+            <Badge variant="secondary">Demo data</Badge>
           </div>
           <CardDescription>
-            From <code className="rounded bg-muted px-1 text-xs">buildArDemoScenario(&quot;2026-06-15&quot;)</code>
+            Sample receivables portfolio as of {formatAsOfLabel(asOfDate)}. You can reload the
+            demo from the left panel anytime.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 pt-4">
           {!demoData ? (
             <p className="text-sm text-muted-foreground">
-              Load the AR demo scenario to see live balances, risk, queue, and command
-              summary.
+              Load the demo to see outstanding balances, risk tiers, and the priority
+              collections queue.
             </p>
           ) : (
             <>
@@ -110,12 +113,12 @@ export function StructuredOutputPanel({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>invoiceId</TableHead>
-                      <TableHead>sponsorId</TableHead>
-                      <TableHead className="text-right">open</TableHead>
-                      <TableHead className="text-right">dPD</TableHead>
-                      <TableHead>risk</TableHead>
-                      <TableHead>action</TableHead>
+                      <TableHead>Invoice</TableHead>
+                      <TableHead>Sponsor</TableHead>
+                      <TableHead className="text-right">Open balance</TableHead>
+                      <TableHead className="text-right">Days past due</TableHead>
+                      <TableHead>Risk</TableHead>
+                      <TableHead>Recommended action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -179,30 +182,6 @@ export function StructuredOutputPanel({
                 </div>
               </div>
             </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* SECTION B — PLACEHOLDER */}
-      <Card className="border-amber-500/40">
-        <CardHeader className="border-b border-border">
-          <div className="flex flex-wrap items-center gap-2">
-            <CardTitle className="text-base">Document output</CardTitle>
-            <Badge variant="warning">PLACEHOLDER</Badge>
-          </div>
-          <CardDescription>
-            Document extraction (placeholder) — not connected to AR engine.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-4">
-          {!structuredOutput ? (
-            <p className="text-sm text-muted-foreground">
-              Process a document to see mock structured JSON here.
-            </p>
-          ) : (
-            <pre className="max-h-[200px] overflow-auto rounded-md border border-border bg-muted/30 p-3 font-mono text-xs">
-              {JSON.stringify(structuredOutput, null, 2)}
-            </pre>
           )}
         </CardContent>
       </Card>

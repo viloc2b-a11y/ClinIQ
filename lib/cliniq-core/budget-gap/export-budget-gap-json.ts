@@ -1,8 +1,7 @@
 /**
  * Module 3 — canonical JSON export for `CompareBudgetResult` (budget gap analyzer).
+ * Browser-safe. For read/write to disk use `./export-budget-gap-json-node`.
  */
-
-import { readFileSync, writeFileSync } from "node:fs"
 
 import type { CompareBudgetResult } from "./types"
 
@@ -29,30 +28,4 @@ export function serializeBudgetGapAnalysisJson(
   options?: { exportedAt?: string },
 ): string {
   return JSON.stringify(buildBudgetGapAnalysisJsonDocument(result, options), null, 2)
-}
-
-export function writeBudgetGapAnalysisJsonDocument(
-  filePath: string,
-  doc: BudgetGapAnalysisJsonDocument,
-): void {
-  writeFileSync(filePath, JSON.stringify(doc, null, 2), "utf8")
-}
-
-export function writeBudgetGapAnalysisJson(
-  filePath: string,
-  result: CompareBudgetResult,
-  options?: { exportedAt?: string },
-): void {
-  writeBudgetGapAnalysisJsonDocument(
-    filePath,
-    buildBudgetGapAnalysisJsonDocument(result, options),
-  )
-}
-
-/** Read canonical JSON from disk (e.g. to derive CSV from the same bytes as written). */
-export function readBudgetGapAnalysisJsonDocument(
-  filePath: string,
-): BudgetGapAnalysisJsonDocument {
-  const text = readFileSync(filePath, "utf8")
-  return JSON.parse(text) as BudgetGapAnalysisJsonDocument
 }

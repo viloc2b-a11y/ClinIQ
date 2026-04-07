@@ -2,7 +2,7 @@ import type {
   BudgetStudyMeta,
   InternalBudgetLine,
   SponsorBudgetLine,
-} from "@/lib/cliniq-core/budget-gap"
+} from "@/lib/cliniq-core/budget-gap/types"
 
 /**
  * Mock scenario: small Houston/Katy metabolic site — sponsor underpays screening,

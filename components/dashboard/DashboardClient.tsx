@@ -10,10 +10,13 @@ import {
   type DocumentTypeOption,
 } from "@/components/dashboard/DocumentIngestPanel"
 import { DocumentViewer } from "@/components/dashboard/DocumentViewer"
-import {
-  type PlaceholderStructuredOutput,
-  StructuredOutputPanel,
-} from "@/components/dashboard/StructuredOutputPanel"
+import { StructuredOutputPanel } from "@/components/dashboard/StructuredOutputPanel"
+
+type PlaceholderStructuredOutput = {
+  type: string
+  status: string
+  notes: string
+}
 
 type DashboardClientProps = {
   asOfDate: string
@@ -27,7 +30,7 @@ export function DashboardClient({ asOfDate, initialArDemo }: DashboardClientProp
   const [extractedText, setExtractedText] = useState<string | null>(null)
   const [structuredOutput, setStructuredOutput] =
     useState<PlaceholderStructuredOutput | null>(null)
-  const [demoData, setDemoData] = useState<ArDemoScenarioResult | null>(null)
+  const [demoData, setDemoData] = useState<ArDemoScenarioResult | null>(initialArDemo)
   const [reviewed, setReviewed] = useState(false)
 
   const uploadedFileName = uploadedFile?.name ?? null
@@ -109,10 +112,10 @@ export function DashboardClient({ asOfDate, initialArDemo }: DashboardClientProp
   return (
     <div className="flex min-h-full flex-col">
       <header className="border-b border-border bg-card px-4 py-3">
-        <h1 className="text-lg font-semibold">ClinIQ Dashboard v1</h1>
+        <h1 className="text-lg font-semibold">Documents and collections</h1>
         <p className="text-xs text-muted-foreground">
-          Validation surface: document ingest (placeholder) · AR (real engine, as-of{" "}
-          <span className="font-mono">{asOfDate}</span>)
+          Upload and preview on the left; collections and risk on the right (demo data, as of{" "}
+          <span className="font-mono">{asOfDate}</span>).
         </p>
       </header>
 
@@ -139,8 +142,8 @@ export function DashboardClient({ asOfDate, initialArDemo }: DashboardClientProp
 
         <div className="flex flex-col gap-3 lg:col-span-5">
           <StructuredOutputPanel
+            asOfDate={asOfDate}
             demoData={demoData}
-            structuredOutput={structuredOutput}
             onQueueRowClick={handleQueueRowClick}
           />
           <ActionBar

@@ -126,5 +126,7 @@
   }
   html {
     @apply font-sans;
+    /* Larger than browser default (~16px→~19px): one gentle bump + two more of the same step */
+    font-size: 118.75%;
   }
 }
