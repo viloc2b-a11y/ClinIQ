@@ -1,6 +1,7 @@
 "use client"
 
 import RunDemoButton from "@/components/RunDemoButton"
+import { AppTopNav } from "@/components/layout/AppTopNav"
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -21,7 +22,6 @@ import {
   Receipt,
   Scale,
   ShieldCheck,
-  Sparkles,
   Workflow,
   Zap,
 } from "lucide-react"
@@ -113,38 +113,7 @@ export function ClinIQPresentation({ variant }: { variant: Variant }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-background">
-      <header className="sticky top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Sparkles className="size-4" aria-hidden />
-            </div>
-            <div>
-              <p className="text-sm font-semibold tracking-tight">ClinIQ</p>
-              <p className="text-xs text-muted-foreground">
-                {variant === "home" ? "Clinical operations & revenue" : "Product tour"}
-              </p>
-            </div>
-          </div>
-          <nav className="flex flex-wrap items-center gap-2" aria-label="Quick links">
-            <Link
-              href="/dashboard?study_key=STUDY-1"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            >
-              Workbench
-            </Link>
-            <Link
-              href="/action-center"
-              className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
-            >
-              Action Center
-            </Link>
-            <Link href="#modules" className={cn(buttonVariants({ size: "sm" }))}>
-              Explore modules
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <AppTopNav tagline={variant === "home" ? "Clinical finance & revenue" : "Product tour"} />
 
       <main>
         <section className="border-b border-border/60 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
@@ -303,7 +272,8 @@ export function ClinIQPresentation({ variant }: { variant: Variant }) {
               Live engine demo
             </h2>
             <p className="mt-2 max-w-2xl text-muted-foreground">
-              Runs the deterministic ClinIQ trace via <code className="text-sm">/api/demo/run</code>.
+              Runs the deterministic ClinIQ Financial trace via{" "}
+              <code className="text-sm">/api/demo/run</code>.
             </p>
             <Card className="mt-6 border-border/80">
               <CardContent className="p-6">
@@ -400,7 +370,7 @@ export function ClinIQPresentation({ variant }: { variant: Variant }) {
         <footer className="border-t border-border bg-muted/30 py-10">
           <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-center sm:flex-row sm:text-left sm:px-6">
             <p className="text-sm text-muted-foreground">
-              ClinIQ — execution and revenue protection for clinical research sites.
+              ClinIQ Financial — execution and revenue protection for clinical research sites.
             </p>
             <div className="flex flex-wrap justify-center gap-2">
               <Link
