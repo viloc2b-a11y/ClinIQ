@@ -1,7 +1,9 @@
+export const dynamic = 'force-dynamic'
+
 import { bootstrapMemoryActionCenter } from "@/lib/cliniq-core/action-center/bootstrap-memory-action-center"
 import { mutateActionCenterFromPersistence } from "@/lib/cliniq-core/action-center/mutate-action-center-from-persistence"
 
-/** STEP 4: bootstrap (memory seed when applicable) → persistence-backed mutate; status codes by `error` key. */
+/** STEP 4: bootstrap (memory seed when applicable) â persistence-backed mutate; status codes by `error` key. */
 export async function POST(req: Request) {
   try {
     const body = await req.json()
