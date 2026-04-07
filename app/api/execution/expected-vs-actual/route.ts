@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import type { ExecutionLineState, MissingExecutionLineState } from "@/lib/execution/run-operational-execution"
 import { runOperationalExecution } from "@/lib/execution/run-operational-execution"
 import {
