@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { runOperationalExecution } from "@/lib/execution/run-operational-execution"
 import {
   createExecutionSupabaseClient,
