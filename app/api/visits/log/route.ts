@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { runPythonLogVisit } from "./python-bridge"
+import { logVisit } from "./log-visit"
 
 type Body = {
   studyId?: unknown
@@ -44,7 +44,6 @@ export async function POST(req: Request) {
     ? body.expectedBillables
     : undefined
 
-  const projectRoot = process.cwd()
   const payload = {
     study_id: studyId,
     subject_id: subjectId,
@@ -54,7 +53,7 @@ export async function POST(req: Request) {
     ...(expected_billables !== undefined ? { expected_billables } : {}),
   }
 
-  const result = await runPythonLogVisit(projectRoot, payload)
+  const result = await logVisit(payload)
 
   if (!result.ok) {
     return NextResponse.json(
@@ -64,7 +63,6 @@ export async function POST(req: Request) {
         subjectId,
         visitName,
         message: result.error,
-        ...(result.detail ? { detail: result.detail } : {}),
       },
       { status: 502 },
     )
