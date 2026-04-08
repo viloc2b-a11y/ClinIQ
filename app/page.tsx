@@ -1,5 +1,5 @@
-import { ClinIQPresentation } from "@/components/marketing/ClinIQPresentation"
+import { redirect } from "next/navigation"
 
 export default function HomePage() {
-  return <ClinIQPresentation variant="home" />
+  redirect("/dashboard")
 }

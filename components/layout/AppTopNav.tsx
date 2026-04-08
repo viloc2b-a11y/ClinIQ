@@ -40,34 +40,28 @@ export function AppTopNav({ tagline = "Clinical finance & revenue" }: AppTopNavP
             href="/dashboard?study_key=STUDY-1"
             className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
           >
-            Workbench
+            Dashboard
           </Link>
-          <Link href="/action-center" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-            Action Center
+          <Link href="/documents" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Documents
           </Link>
-          <Link href="/budget-gap" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-            Budget gap
+          <Link href="/study-build" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Study Build
           </Link>
-          <Link href="/negotiation" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-            Negotiation
+          <Link href="/billables" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Billables
           </Link>
-          <Link href="/import" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
-            Import
+          <Link href="/leakage" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Leakage
           </Link>
-          <Link href="/claims" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden md:inline-flex")}>
-            Claims
+          <Link href="/counteroffer" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Counteroffer
           </Link>
-          <Link href="/ledger" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden md:inline-flex")}>
-            Ledger
+          <Link href="/analytics" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Analytics
           </Link>
-          <Link href="/dashboard/ar" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden lg:inline-flex")}>
-            AR
-          </Link>
-          <Link href="/#modules" className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "hidden sm:inline-flex")}>
-            Modules
-          </Link>
-          <Link href="/sales" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
-            Tour
+          <Link href="/tasks" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Tasks
           </Link>
           <Link href="/admin" className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
             Admin
