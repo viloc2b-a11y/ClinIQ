@@ -4,13 +4,14 @@ import { useMemo, useState } from "react"
 import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
 import { getDocumentsDemo } from "@/lib/mvp/backend"
 import { formatUsd } from "@/lib/mvp/format"
+import { cn } from "@/lib/utils"
 
 type DocStatus = "processing" | "ready" | "error"
 
@@ -91,9 +92,9 @@ export function DocumentsMvpPage() {
                 onChange={(e) => onFilesSelected(e.target.files)}
               />
             </label>
-            <Button asChild variant="outline">
-              <Link href="/import">Analyze &amp; start intake</Link>
-            </Button>
+            <Link href="/import" className={cn(buttonVariants({ variant: "outline" }))}>
+              Analyze &amp; start intake
+            </Link>
           </CardContent>
         </Card>
 
