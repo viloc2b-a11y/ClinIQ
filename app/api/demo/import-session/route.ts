@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/admin/supabase-admin"
 import { createExecutionSupabaseClient } from "@/lib/execution/service-supabase"
-import { isImportIntent } from "@/lib/import/parsed-budget-line"
+import { isImportIntent, type ParsedBudgetLine } from "@/lib/import/parsed-budget-line"
 import { parseUploadBuffer } from "@/lib/import/parse-upload-buffer"
 import { NextResponse } from "next/server"
 
@@ -126,6 +126,7 @@ export async function POST(req: Request) {
     sourceType: parsed.sourceType,
     lineCount: parsed.lines.length,
     parserWarnings: parsed.parserWarnings,
+    lines: parsed.lines.slice(0, 250) as ParsedBudgetLine[],
   })
 }
 

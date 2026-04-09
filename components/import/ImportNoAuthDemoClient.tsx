@@ -2,12 +2,18 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { CLINIQ_BUDGET_GAP_HANDOFF_KEY } from "@/lib/budget-gap/handoff-session"
+import type { ParsedBudgetLine } from "@/lib/import/parsed-budget-line"
+import type { InternalBudgetLine, SponsorBudgetLine, BudgetStudyMeta } from "@/lib/cliniq-core/budget-gap"
+import { houstonKatyInternalBudgetLines, houstonKatySponsorBudgetLines } from "@/features/budget-gap/mock-houston-diabetes"
 
 export function ImportNoAuthDemoClient() {
+  const router = useRouter()
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [err, setErr] = useState<string | null>(null)
@@ -17,6 +23,52 @@ export function ImportNoAuthDemoClient() {
   const [studyName, setStudyName] = useState("STUDY-1 Demo Study")
   const [sponsorName, setSponsorName] = useState("Acme Pharma")
   const [croName, setCroName] = useState("Northbridge CRO")
+
+  const toSponsorLine = (l: ParsedBudgetLine, i: number): SponsorBudgetLine => {
+    const qty = l.quantity ?? 1
+    const unit = l.unitType ?? "unit"
+    const unitOffer =
+      l.unitPrice ??
+      (l.totalPrice != null && qty ? l.totalPrice / qty : null) ??
+      0
+    const total = l.totalPrice ?? unitOffer * qty
+    return {
+      id: l.lineId || `sponsor-${i}`,
+      category: l.category ?? "other",
+      lineCode: (l.lineId || `LINE-${i}`).slice(0, 32),
+      label: l.itemDescription || "Imported line",
+      visitName: l.visitName ?? "General",
+      quantity: qty,
+      unit,
+      sponsorUnitOffer: Number(unitOffer) || 0,
+      sponsorTotalOffer: Number(total) || 0,
+      notes: l.notes ?? "",
+      source: "sponsor-budget",
+    }
+  }
+
+  const toInternalLine = (l: ParsedBudgetLine, i: number): InternalBudgetLine => {
+    const qty = l.quantity ?? 1
+    const unit = l.unitType ?? "unit"
+    const unitCost =
+      l.unitPrice ??
+      (l.totalPrice != null && qty ? l.totalPrice / qty : null) ??
+      0
+    const total = l.totalPrice ?? unitCost * qty
+    return {
+      id: l.lineId || `internal-${i}`,
+      category: l.category ?? "other",
+      lineCode: (l.lineId || `LINE-${i}`).slice(0, 32),
+      label: l.itemDescription || "Imported line",
+      visitName: l.visitName ?? "General",
+      quantity: qty,
+      unit,
+      internalUnitCost: Number(unitCost) || 0,
+      internalTotal: Number(total) || 0,
+      notes: l.notes ?? "",
+      source: "internal-model",
+    }
+  }
 
   const seed = async () => {
     setBusy(true)
@@ -49,9 +101,45 @@ export function ImportNoAuthDemoClient() {
       if (croName.trim()) fd.set("croName", croName.trim())
 
       const res = await fetch("/api/demo/import-session", { method: "POST", body: fd })
-      const json = (await res.json()) as { ok?: boolean; error?: string; sessionId?: string; lineCount?: number }
+      const json = (await res.json()) as {
+        ok?: boolean
+        error?: string
+        sessionId?: string
+        lineCount?: number
+        lines?: ParsedBudgetLine[]
+      }
       if (!res.ok || !json.ok) throw new Error(json.error ?? "Upload failed")
-      setMsg(`Parsed and saved ${json.lineCount ?? 0} lines (session ${json.sessionId ?? ""}).`.trim())
+      const parsedLines = Array.isArray(json.lines) ? json.lines : []
+
+      // Build the handoff payload expected by Budget Gap.
+      const studyMeta: BudgetStudyMeta = {
+        studyId: studyKey.trim() || "STUDY-1",
+        studyName: studyName.trim() || "Imported budget",
+        patientsInBudget: 1,
+      }
+
+      let sponsorLines: SponsorBudgetLine[] = []
+      let internalLines: InternalBudgetLine[] = []
+
+      if (intent === "sponsor_budget") {
+        sponsorLines = parsedLines.map(toSponsorLine)
+        internalLines = houstonKatyInternalBudgetLines
+      } else if (intent === "site_internal_budget") {
+        internalLines = parsedLines.map(toInternalLine)
+        sponsorLines = houstonKatySponsorBudgetLines
+      } else {
+        // Contract/financial sources are usually sponsor-side terms; treat as sponsor input by default.
+        sponsorLines = parsedLines.map(toSponsorLine)
+        internalLines = houstonKatyInternalBudgetLines
+      }
+
+      sessionStorage.setItem(
+        CLINIQ_BUDGET_GAP_HANDOFF_KEY,
+        JSON.stringify({ studyMeta, internalLines, sponsorLines }),
+      )
+
+      setMsg(`Parsed ${json.lineCount ?? 0} lines — opening Budget Gap…`.trim())
+      router.push("/budget-gap")
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e))
     } finally {
