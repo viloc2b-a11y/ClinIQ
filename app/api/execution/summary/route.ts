@@ -1,5 +1,3 @@
-export const dynamic = 'force-dynamic'
-
 import {
   createExecutionSupabaseClient,
   executionSupabaseErrorResponse,
@@ -53,20 +51,27 @@ export async function GET(req: Request) {
     return Response.json({ ok: false, error: errs[0]!.message }, { status: 500 })
   }
 
-  const { data: expSum } = await supabase
+  const { data: expSum, error: expErr } = await supabase
     .from("expected_billables")
     .select("expected_revenue")
     .eq("study_id", studyKey)
+  if (expErr) {
+    return Response.json({ ok: false, error: expErr.message }, { status: 500 })
+  }
 
-  const { data: biSum } = await supabase
+  const { data: biSum, error: biErr } = await supabase
     .from("billable_instances")
     .select("amount, quantity")
     .eq("execution_study_key", studyKey)
+  if (biErr) {
+    return Response.json({ ok: false, error: biErr.message }, { status: 500 })
+  }
 
   let expectedRevenue = 0
   for (const r of expSum ?? []) {
     const v = (r as { expected_revenue?: unknown }).expected_revenue
-    expectedRevenue += typeof v === "number" ? v : Number(v ?? 0)
+    const n = typeof v === "number" ? v : Number(v ?? 0)
+    expectedRevenue += Number.isFinite(n) ? n : 0
   }
 
   let actualAmount = 0
@@ -75,7 +80,8 @@ export async function GET(req: Request) {
     const q = (r as { quantity?: unknown }).quantity
     const an = typeof a === "number" ? a : Number(a ?? 0)
     const qn = typeof q === "number" ? q : Number(q ?? 1)
-    actualAmount += an * qn
+    const line = (Number.isFinite(an) ? an : 0) * (Number.isFinite(qn) ? qn : 0)
+    actualAmount += Number.isFinite(line) ? line : 0
   }
 
   const { data: recentEvents } = await supabase
