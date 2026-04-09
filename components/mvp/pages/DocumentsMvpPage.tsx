@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -90,8 +91,8 @@ export function DocumentsMvpPage() {
                 onChange={(e) => onFilesSelected(e.target.files)}
               />
             </label>
-            <Button variant="outline" disabled>
-              Approve & Generate Model
+            <Button asChild variant="outline">
+              <Link href="/import">Analyze &amp; start intake</Link>
             </Button>
           </CardContent>
         </Card>
