@@ -25,18 +25,19 @@ export function StudyBuildMvpPage() {
   }, [demo.value])
 
   return (
-    <MvpShell title="Study Build">
+    <MvpShell
+      title="Study Build"
+      subtitle="Configuration areas that shape billable logic, rate integrity, and downstream recovery accuracy."
+    >
       <StudyHeader />
-      <div className="text-xs text-muted-foreground">
-        <span className="font-medium">Beta:</span> {demo.note}
-      </div>
+      <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">{demo.note}</p>
 
       <Card>
         <CardHeader className="pb-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Builder checklist</CardTitle>
-            <Button size="sm" disabled>
-              Approve & Publish
+            <Button size="sm" disabled title="Available when configuration validation completes">
+              Publish configuration
             </Button>
           </div>
         </CardHeader>

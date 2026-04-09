@@ -13,11 +13,11 @@ export default function AdminDeniedPage() {
     <main className="mx-auto flex min-h-[70vh] max-w-lg flex-col justify-center px-4 py-12">
       <Card className="border-destructive/30">
         <CardHeader>
-          <CardTitle>Admin access denied</CardTitle>
+          <CardTitle>Administrator access</CardTitle>
           <CardDescription>
-            You are signed in but your email is not listed in{" "}
-            <code className="rounded bg-muted px-1 text-xs">CLINIQ_ADMIN_EMAILS</code>. Ask a deploy
-            admin to add you.
+            You are signed in, but this account is not authorized for the admin workspace. Ask an organization
+            administrator to add your email to{" "}
+            <code className="rounded bg-muted px-1 text-xs">CLINIQ_ADMIN_EMAILS</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">

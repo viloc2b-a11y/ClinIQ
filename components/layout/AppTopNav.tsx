@@ -49,7 +49,7 @@ export function AppTopNav({ tagline = "Clinical finance & revenue" }: AppTopNavP
           </div>
         </Link>
         <div className="flex max-w-full flex-col items-end gap-2">
-          <nav className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2" aria-label="Primary demo navigation">
+          <nav className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2" aria-label="Primary navigation">
             {PRIMARY.map(({ href, label }) => {
               const active = pathname === href
               return (
@@ -68,9 +68,9 @@ export function AppTopNav({ tagline = "Clinical finance & revenue" }: AppTopNavP
           </nav>
           <nav
             className="flex max-w-full flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground"
-            aria-label="Beta and admin links"
+            aria-label="Additional workspace sections"
           >
-            <span className="font-medium text-foreground/60">Beta</span>
+            <span className="font-medium text-foreground/60">More</span>
             {SECONDARY.map(({ href, label }) => (
               <Link key={href} href={href} className="underline-offset-4 hover:text-foreground hover:underline">
                 {label}

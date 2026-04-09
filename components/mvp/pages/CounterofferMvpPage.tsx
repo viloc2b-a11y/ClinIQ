@@ -14,8 +14,22 @@ import { getCounterofferData, type CounterofferData, type DataSource } from "@/l
 import { cn } from "@/lib/utils"
 
 function priorityBadge(priority: "must-win" | "tradeoff") {
-  if (priority === "must-win") return <Badge variant="destructive">must-win</Badge>
-  return <Badge variant="secondary">tradeoff</Badge>
+  if (priority === "must-win")
+    return (
+      <span className="flex flex-wrap items-center gap-1">
+        <Badge variant="destructive" className="whitespace-nowrap font-medium">
+          Must-win
+        </Badge>
+        <Badge variant="outline" className="whitespace-nowrap text-[10px] font-medium text-muted-foreground">
+          Negotiation leverage
+        </Badge>
+      </span>
+    )
+  return (
+    <Badge variant="secondary" className="whitespace-nowrap font-medium">
+      Tradeoff
+    </Badge>
+  )
 }
 
 export function CounterofferMvpPage() {
@@ -51,11 +65,18 @@ export function CounterofferMvpPage() {
 
   const dealSelectDisabled = dealsLoading || deals.length === 0
 
+  const shellSubtitle =
+    loading || dealsLoading ? (
+      "Sponsor versus site-target economics by fee line — aligned to the same active study as Billables and Leakage."
+    ) : (
+      <>
+        <span className="font-medium text-foreground">{formatUsd(data.gap)}</span> gap between sponsor offer and site
+        target — protect margin before final budget acceptance.
+      </>
+    )
+
   return (
-    <MvpShell
-      title="Counteroffer"
-      subtitle="Negotiation opportunity — sponsor versus target economics by fee line, using the same study context as the rest of the demo."
-    >
+    <MvpShell title="Counteroffer" subtitle={shellSubtitle}>
       {loading || dealsLoading ? (
         <MvpPageSkeleton />
       ) : (
@@ -64,12 +85,12 @@ export function CounterofferMvpPage() {
             <StudyHeader />
             <div className="flex flex-wrap justify-end gap-2">
               {source === "fallback" ? (
-                <Badge variant="outline" className="font-normal text-muted-foreground">
-                  Demo scenario
+                <Badge variant="outline" className="whitespace-nowrap font-medium text-muted-foreground">
+                  Negotiation scenario
                 </Badge>
               ) : (
-                <Badge variant="secondary" className="font-normal">
-                  Live negotiation lines
+                <Badge variant="secondary" className="whitespace-nowrap font-medium">
+                  Saved negotiation lines
                 </Badge>
               )}
             </div>
@@ -81,18 +102,18 @@ export function CounterofferMvpPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Active deal</CardTitle>
+              <CardTitle className="text-base">Negotiation record</CardTitle>
               <p className="text-xs text-muted-foreground">
-                Open deals for this study load automatically. Pick a deal to drive counteroffer lines — no URL parameters
-                required.
+                Open deals for this study appear here when present; otherwise the workspace uses the current study
+                scenario.
               </p>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-              <label className="text-sm font-medium shrink-0" htmlFor="demo-deal-select">
+              <label className="text-sm font-medium shrink-0" htmlFor="deal-select">
                 Deal
               </label>
               <select
-                id="demo-deal-select"
+                id="deal-select"
                 className={cn(
                   "h-10 min-w-[240px] flex-1 rounded-md border border-input bg-background px-3 text-sm shadow-sm",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -103,7 +124,7 @@ export function CounterofferMvpPage() {
                 onChange={(e) => setDealId(e.target.value)}
               >
                 {deals.length === 0 ? (
-                  <option value="">Coordinated demo deal (no database deals)</option>
+                  <option value="">Current study scenario</option>
                 ) : (
                   deals.map((d) => (
                     <option key={d.deal_id} value={d.deal_id}>
@@ -121,7 +142,7 @@ export function CounterofferMvpPage() {
                 <CardTitle className="text-xs font-medium text-muted-foreground">Sponsor offer</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold tracking-tight">{formatUsd(data.sponsorOffer)}</div>
+                <div className="text-2xl font-semibold tracking-tight tabular-nums">{formatUsd(data.sponsorOffer)}</div>
               </CardContent>
             </Card>
             <Card>
@@ -129,18 +150,34 @@ export function CounterofferMvpPage() {
                 <CardTitle className="text-xs font-medium text-muted-foreground">Internal target</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold tracking-tight">{formatUsd(data.internalTarget)}</div>
+                <div className="text-2xl font-semibold tracking-tight tabular-nums">{formatUsd(data.internalTarget)}</div>
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-0">
+              <CardHeader className="flex flex-row items-start justify-between gap-2 pb-0">
                 <CardTitle className="text-xs font-medium text-muted-foreground">Gap</CardTitle>
+                <Badge variant="outline" className="whitespace-nowrap text-[10px] font-medium text-muted-foreground">
+                  Margin risk
+                </Badge>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold tracking-tight text-destructive">{formatUsd(data.gap)}</div>
+                <div className="text-2xl font-semibold tracking-tight tabular-nums text-destructive">
+                  {formatUsd(data.gap)}
+                </div>
               </CardContent>
             </Card>
           </div>
+
+          <Card className="border-border/80 bg-muted/15 shadow-none">
+            <CardContent className="space-y-2 p-4 text-sm leading-relaxed text-foreground">
+              <p>This gap directly affects site margin and downstream study viability.</p>
+              {rows.length > 0 ? (
+                <p className="text-muted-foreground">
+                  Prioritized lines focus on the highest recovery and negotiation leverage.
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader className="pb-0">
@@ -149,34 +186,44 @@ export function CounterofferMvpPage() {
             </CardHeader>
             <CardContent>
               {rows.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No lines to display.</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">No counteroffer lines in this view.</p>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fee</TableHead>
-                      <TableHead>Sponsor</TableHead>
-                      <TableHead>Proposed</TableHead>
-                      <TableHead>Δ</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Justification</TableHead>
-                      <TableHead>Days pending</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((r, i) => (
-                      <TableRow key={`${r.fee}-${i}`}>
-                        <TableCell className="font-medium">{r.fee}</TableCell>
-                        <TableCell>{formatUsd(r.sponsor)}</TableCell>
-                        <TableCell className="font-semibold">{formatUsd(r.proposed)}</TableCell>
-                        <TableCell className="font-semibold">{formatUsd(r.delta)}</TableCell>
-                        <TableCell>{priorityBadge(r.priority)}</TableCell>
-                        <TableCell className="max-w-[420px] whitespace-normal text-muted-foreground">{r.justification}</TableCell>
-                        <TableCell className="font-semibold">{r.daysPending}</TableCell>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Fee</TableHead>
+                        <TableHead className="text-right">Sponsor</TableHead>
+                        <TableHead className="text-right">Proposed</TableHead>
+                        <TableHead className="text-right">Δ</TableHead>
+                        <TableHead>Priority</TableHead>
+                        <TableHead>Justification</TableHead>
+                        <TableHead className="text-right">Days pending</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map((r, i) => (
+                        <TableRow key={`${r.fee}-${i}`}>
+                          <TableCell className="whitespace-nowrap font-medium">{r.fee}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right tabular-nums">{formatUsd(r.sponsor)}</TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                            {formatUsd(r.proposed)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                            {formatUsd(r.delta)}
+                          </TableCell>
+                          <TableCell>{priorityBadge(r.priority)}</TableCell>
+                          <TableCell className="min-w-[320px] max-w-[520px] whitespace-normal text-muted-foreground">
+                            {r.justification}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                            {r.daysPending}d
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

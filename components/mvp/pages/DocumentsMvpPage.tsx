@@ -43,7 +43,7 @@ export function DocumentsMvpPage() {
 
   const quickExtract = useMemo(() => {
     const byVisit = new Map<string, { visit: string; procedure: string; rate: number; days: number }>()
-    // Demo extract: derive from seeded ingestion rows, sorted by delay.
+    // Quick extract: derive from intake rows, sorted by delay.
     for (const row of uploads) {
       const existing = byVisit.get(row.type)
       if (!existing || row.daysPending > existing.days) {
@@ -68,11 +68,12 @@ export function DocumentsMvpPage() {
   }
 
   return (
-    <MvpShell title="Documents">
+    <MvpShell
+      title="Documents"
+      subtitle="Source documents and extracted rows that influence downstream revenue readiness."
+    >
       <StudyHeader />
-      <div className="text-xs text-muted-foreground">
-        <span className="font-medium">Beta:</span> {demo.note}
-      </div>
+      <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">{demo.note}</p>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">
@@ -90,8 +91,8 @@ export function DocumentsMvpPage() {
                 onChange={(e) => onFilesSelected(e.target.files)}
               />
             </label>
-            <Button variant="outline" disabled>
-              Approve & Generate Model
+            <Button variant="outline" disabled title="Available when study model publishing is enabled">
+              Publish to study model
             </Button>
           </CardContent>
         </Card>

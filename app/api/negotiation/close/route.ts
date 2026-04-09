@@ -109,7 +109,7 @@ export async function POST(req: Request) {
   }
 
   // Audit snapshot (close-history) before writing final agreement.
-  await supabase.from("negotiation_round_snapshots").insert({
+  const { error: snapErr } = await supabase.from("negotiation_round_snapshots").insert({
     deal_id: dealId,
     user_id: user.id,
     site_id: siteId,
@@ -119,9 +119,12 @@ export async function POST(req: Request) {
     financials: summary,
     items: safeItems,
   })
+  if (snapErr) {
+    return NextResponse.json({ ok: false, error: snapErr.message }, { status: 500 })
+  }
 
   // Mark deal as closed and bump version (best-effort; deal may not exist in older deployments).
-  await supabase
+  const { data: closedDeal, error: closeErr } = await supabase
     .from("negotiation_deals")
     .update({
       status: "closed",
@@ -129,6 +132,14 @@ export async function POST(req: Request) {
       last_updated_by: user.id,
     })
     .eq("deal_id", dealId)
+    .select("deal_id")
+    .maybeSingle()
+  if (closeErr) {
+    return NextResponse.json({ ok: false, error: closeErr.message }, { status: 500 })
+  }
+  if (!closedDeal) {
+    return NextResponse.json({ ok: false, error: "Deal not found" }, { status: 404 })
+  }
 
   const { data: inserted, error: insErr } = await supabase
     .from("final_agreements")

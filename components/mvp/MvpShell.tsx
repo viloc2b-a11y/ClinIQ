@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import type { ReactNode } from "react"
 
 export function MvpShell({
   title,
@@ -8,20 +9,20 @@ export function MvpShell({
   children,
 }: {
   title: string
-  /** Executive one-liner for this screen (demo closure). */
-  subtitle?: string
-  children: React.ReactNode
+  /** Executive one-liner: financial “why this matters” for this screen. */
+  subtitle?: ReactNode
+  children: ReactNode
 }) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h1>
+        <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
           {subtitle ??
-            "Sorted by highest delay · each row shows days pending and dollar impact · revenue at risk and recovery potential"}
+            "Ranked by aging where applicable — each row ties days outstanding to dollar impact and recovery priority."}
         </p>
       </div>
-      <div className={cn("mt-6", "flex flex-col gap-6")}>{children}</div>
+      <div className={cn("mt-7", "flex flex-col gap-6 sm:gap-7")}>{children}</div>
     </div>
   )
 }

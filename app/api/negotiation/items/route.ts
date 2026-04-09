@@ -114,6 +114,9 @@ export async function POST(req: Request) {
   const studyKey = asString(body.studyKey).trim() || "STUDY-1"
   const studyName = body.studyName === null ? null : asString(body.studyName).trim() || null
   const expectedVersion = Number.isFinite(body.expectedVersion) ? Number(body.expectedVersion) : null
+  if (expectedVersion === null) {
+    return NextResponse.json({ ok: false, error: "expectedVersion is required" }, { status: 400 })
+  }
 
   let siteId = asString(body.siteId).trim()
   if (!siteId) {
@@ -144,27 +147,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing items[]" }, { status: 400 })
   }
 
-  // Concurrency gate: deal version must match expectedVersion if provided.
-  if (expectedVersion !== null) {
-    const { data: deal, error: dealErr } = await supabase
-      .from("negotiation_deals")
-      .select("deal_id, version, last_updated_at, last_updated_by")
-      .eq("deal_id", dealId)
-      .maybeSingle()
+  // Concurrency gate: deal version must match expectedVersion.
+  const { data: deal, error: dealErr } = await supabase
+    .from("negotiation_deals")
+    .select("deal_id, version, last_updated_at, last_updated_by")
+    .eq("deal_id", dealId)
+    .maybeSingle()
 
-    if (dealErr) return NextResponse.json({ ok: false, error: dealErr.message }, { status: 500 })
-    const v = (deal as { version?: number } | null)?.version
-    if (!v) return NextResponse.json({ ok: false, error: "Deal not found" }, { status: 404 })
-    if (v !== expectedVersion) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "Conflict: deal changed since you loaded it",
-          conflict: { expectedVersion, current: deal },
-        },
-        { status: 409 },
-      )
-    }
+  if (dealErr) return NextResponse.json({ ok: false, error: dealErr.message }, { status: 500 })
+  const v = (deal as { version?: number } | null)?.version
+  if (typeof v !== "number") return NextResponse.json({ ok: false, error: "Deal not found" }, { status: 404 })
+  if (v !== expectedVersion) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Conflict: deal changed since you loaded it",
+        conflict: { expectedVersion, current: deal },
+      },
+      { status: 409 },
+    )
   }
 
   const rows = rawItems.map((raw): Record<string, unknown> => {
@@ -226,7 +227,7 @@ export async function POST(req: Request) {
         status: (r.status as "pending" | "accepted" | "rejected") ?? "pending",
       })),
     )
-    await supabase.from("negotiation_round_snapshots").insert({
+    const { error: snapErr } = await supabase.from("negotiation_round_snapshots").insert({
       deal_id: dealId,
       user_id: user.id,
       site_id: siteId,
@@ -250,21 +251,12 @@ export async function POST(req: Request) {
         status: r.status,
       })),
     })
+    if (snapErr) {
+      return NextResponse.json({ ok: false, error: snapErr.message }, { status: 500 })
+    }
 
     // Bump deal version + last_updated fields.
-    let nextVersion: number | null = null
-    if (expectedVersion !== null) {
-      nextVersion = expectedVersion + 1
-    } else {
-      const { data: cur, error: curErr } = await supabase
-        .from("negotiation_deals")
-        .select("version")
-        .eq("deal_id", dealId)
-        .maybeSingle()
-      if (curErr) return NextResponse.json({ ok: false, error: curErr.message }, { status: 500 })
-      const v = (cur as { version?: number } | null)?.version
-      nextVersion = (typeof v === "number" && Number.isFinite(v) ? v : 0) + 1
-    }
+    const nextVersion = expectedVersion + 1
 
     const { data: bumped, error: bumpErr } = await supabase
       .from("negotiation_deals")
@@ -274,11 +266,15 @@ export async function POST(req: Request) {
         version: nextVersion,
       })
       .eq("deal_id", dealId)
+      .eq("version", expectedVersion)
       .select("version, last_updated_at, last_updated_by")
       .maybeSingle()
 
     if (bumpErr) {
       return NextResponse.json({ ok: false, error: bumpErr.message }, { status: 500 })
+    }
+    if (!bumped) {
+      return NextResponse.json({ ok: false, error: "Conflict: deal changed while saving" }, { status: 409 })
     }
 
     return NextResponse.json({ ok: true, siteId, deal: bumped ?? null })

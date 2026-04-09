@@ -51,7 +51,11 @@ function mockLeakageRows(): TopLeakageRow[] {
 }
 
 export async function getExecutionSummary(studyKey: string): Promise<MvpResult<MvpKpis>> {
-  const fallback: MvpResult<MvpKpis> = { source: "fallback", value: MVP_MOCK.kpis, note: "Demo data" }
+  const fallback: MvpResult<MvpKpis> = {
+    source: "fallback",
+    value: MVP_MOCK.kpis,
+    note: "Active study view — figures refresh when execution data is connected.",
+  }
   if (!studyKey.trim()) return fallback
 
   const res = await fetchApiOk<{
@@ -79,7 +83,11 @@ export async function getExecutionSummary(studyKey: string): Promise<MvpResult<M
 }
 
 export async function getLeakageRows(studyKey: string): Promise<MvpResult<TopLeakageRow[]>> {
-  const fallback: MvpResult<TopLeakageRow[]> = { source: "fallback", value: mockLeakageRows(), note: "Demo data" }
+  const fallback: MvpResult<TopLeakageRow[]> = {
+    source: "fallback",
+    value: mockLeakageRows(),
+    note: "Active study view — leakage list updates when execution signals are available.",
+  }
   if (!studyKey.trim()) return fallback
 
   const res = await fetchApiOk<any[]>(`/api/execution/leakage?study_id=${encodeURIComponent(studyKey)}&limit=200`)
@@ -110,7 +118,7 @@ export async function getBillablesRows(studyKey: string): Promise<MvpResult<Bill
   // It is produced by execution/leakage backend logic and is traceable to missing_amount.
   const fallback: MvpResult<BillablesRow[]> = {
     source: "fallback",
-    note: "Demo data",
+    note: "Active study view — billables align to execution leakage when connected.",
     value: MVP_MOCK.patients.map((p) => ({
       patient: p.id,
       visit: p.visit,
@@ -154,23 +162,28 @@ export async function getAnalyticsSnapshot(studyKey: string): Promise<AnalyticsS
 
   const metrics = [
     {
-      metric: "Expected revenue (execution)",
+      metric: "Expected revenue (ready to bill)",
       value: formatUsd(kpisRes.value.ready),
       impactUsd: kpisRes.value.ready,
       daysPending: maxDays,
     },
     {
-      metric: "Revenue gap (at risk)",
+      metric: "Revenue at risk (gap)",
       value: formatUsd(kpisRes.value.atRisk),
       impactUsd: kpisRes.value.atRisk,
       daysPending: maxDays,
     },
-    { metric: "Delayed items", value: String(delayedCount), impactUsd: kpisRes.value.atRisk, daysPending: 12 },
-    { metric: "Critical items", value: String(criticalCount), impactUsd: kpisRes.value.atRisk, daysPending: 35 },
+    { metric: "Delayed items (>7d)", value: String(delayedCount), impactUsd: kpisRes.value.atRisk, daysPending: 12 },
+    { metric: "Critical items (>30d)", value: String(criticalCount), impactUsd: kpisRes.value.atRisk, daysPending: 35 },
   ].sort((a, b) => b.daysPending - a.daysPending)
 
   const source: DataSource = kpisRes.source === "live" || leakageRes.source === "live" ? "live" : "fallback"
-  return { kpis: kpisRes.value, metrics, source, note: source === "fallback" ? "Demo data" : undefined }
+  return {
+    kpis: kpisRes.value,
+    metrics,
+    source,
+    note: source === "fallback" ? "Executive metrics reflect the active study until live execution syncs." : undefined,
+  }
 }
 
 export type CounterofferLine = {
@@ -203,7 +216,7 @@ export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpR
   const res = await fetch(`/api/demo/negotiation-deals?study_key=${encodeURIComponent(studyKey)}`, { cache: "no-store" })
   const json = await safeJson<{ ok?: unknown; data?: unknown }>(res)
   if (!res.ok || !json || json.ok !== true || !Array.isArray(json.data)) {
-    return { ...empty, note: "Deals list unavailable" }
+    return { ...empty, note: "Negotiation deals could not be loaded — try again or continue with the active study scenario." }
   }
 
   const mapped: NegotiationDealOption[] = (json.data as any[]).map((d) => {
@@ -216,7 +229,7 @@ export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpR
 
   return mapped.length
     ? { source: "live", value: mapped }
-    : { source: "fallback", value: [], note: "No open deals for this study" }
+    : { source: "fallback", value: [], note: "No open negotiation record for this study in the workspace." }
 }
 
 function counterofferFallbackLines(): CounterofferLine[] {
@@ -250,7 +263,7 @@ export async function getCounterofferData(args: { dealId?: string; studyKey: str
 
   const fallbackNoDeal: MvpResult<CounterofferData> = {
     source: "fallback",
-    note: "Coordinated demo negotiation scenario",
+    note: "Negotiation scenario for the active study — select a saved deal when available.",
     value: { ...fallbackBase, lines: counterofferFallbackLines().map((l) => ({ ...l, daysPending: maxDays || l.daysPending })) },
   }
 
@@ -261,7 +274,7 @@ export async function getCounterofferData(args: { dealId?: string; studyKey: str
   if (!res.ok || !json || json.ok !== true || !Array.isArray(json.data) || json.data.length === 0) {
     return {
       source: "fallback",
-      note: "Demo negotiation lines — this deal has no saved line items yet",
+      note: "Representative lines shown — save negotiation items to this deal for line-level detail.",
       value: {
         ...fallbackBase,
         lines: counterofferFallbackLines().map((l) => ({ ...l, daysPending: maxDays || l.daysPending })),
@@ -305,7 +318,7 @@ export async function getCounterofferData(args: { dealId?: string; studyKey: str
 }
 
 // -----------------------
-// Beta/mock modules (explicit)
+// Secondary workspace modules (illustrative rows for intake / config / tasks UI)
 // -----------------------
 
 export type DocumentsDemoRow = {
@@ -321,7 +334,7 @@ export function getDocumentsDemo(): MvpResult<DocumentsDemoRow[]> {
   const maxDays = Math.max(...MVP_MOCK.patients.map((p) => p.days))
   return {
     source: "fallback",
-    note: "Demo data (document ingestion backend not wired yet)",
+    note: "Intake workspace — representative documents and extraction rows for the active study.",
     value: [
       { file: "SoA.xlsx", type: "schedule-of-assessments", status: "ready", confidence: 0.86, daysPending: maxDays, impactUsd: MVP_MOCK.kpis.atRisk },
       { file: "Budget.pdf", type: "budget", status: "processing", confidence: 0.72, daysPending: maxDays, impactUsd: MVP_MOCK.kpis.ready },
@@ -335,7 +348,7 @@ export function getStudyBuildDemo(): MvpResult<StudyBuildDemoRow[]> {
   const maxDays = Math.max(...MVP_MOCK.patients.map((p) => p.days))
   return {
     source: "fallback",
-    note: "Demo data (study build/model backend not wired yet)",
+    note: "Study configuration — representative checklist for billable logic and rate integrity.",
     value: ([
       { area: "Document coverage", status: "needs-review", daysPending: maxDays, impactUsd: MVP_MOCK.kpis.atRisk },
       { area: "Rate rules", status: "needs-review", daysPending: 12, impactUsd: MVP_MOCK.kpis.ready },
@@ -354,7 +367,7 @@ export function getTasksDemo(): MvpResult<TaskDemoRow[]> {
 
   return {
     source: "fallback",
-    note: "Demo data (tasks persistence not enabled)",
+    note: "Operational queue — representative work items ranked by financial impact and delay.",
     value: (MVP_MOCK.patients
       .map((p) => ({
         title: `Resolve billing delay: ${p.id} ${p.visit}`,

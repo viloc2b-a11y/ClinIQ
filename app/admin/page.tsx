@@ -27,7 +27,8 @@ export default async function AdminHomePage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Administration</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Signed in as <span className="font-mono text-foreground">{user.email}</span>
+            Signed in as <span className="font-mono text-foreground">{user.email}</span>. Invite teammates and review
+            deploy settings below.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -45,10 +46,8 @@ export default async function AdminHomePage() {
 
       <Card className="border-border/80">
         <CardHeader>
-          <CardTitle className="text-base">Deploy configuration</CardTitle>
-          <CardDescription>
-            Relevant variables (do not paste secrets in chat).
-          </CardDescription>
+          <CardTitle className="text-base">Environment</CardTitle>
+          <CardDescription>Reference variables for your deployment. Do not share secret values outside secure channels.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>

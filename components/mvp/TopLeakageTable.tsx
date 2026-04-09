@@ -23,36 +23,48 @@ export function TopLeakageTable({ rows }: { rows: readonly TopLeakageRow[] }) {
       <CardContent>
         {sorted.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
-            No leakage rows in this top list — data may still be loading on other modules or execution may be disconnected.
+            No items in this list yet — connect execution to populate this view for the active study.
           </p>
         ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Patient</TableHead>
-              <TableHead>Visit</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Days Pending</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sorted.map((p) => {
-              const severity = statusFromDays(p.daysPending)
-              return (
-                <TableRow key={`${p.patient}-${p.visit}`}>
-                  <TableCell className="font-medium">{p.patient}</TableCell>
-                  <TableCell>{p.visit}</TableCell>
-                  <TableCell>{formatUsd(p.amount)}</TableCell>
-                  <TableCell className="font-semibold">{p.daysPending}</TableCell>
-                  <TableCell>
-                    <Badge variant={severity === "critical" ? "destructive" : "secondary"}>{severity}</Badge>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Patient</TableHead>
+                  <TableHead>Visit</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-right">Days pending</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {sorted.map((p) => {
+                  const severity = statusFromDays(p.daysPending)
+                  const severityLabel = severity === "critical" ? "Critical" : "Delayed"
+                  return (
+                    <TableRow key={`${p.patient}-${p.visit}`}>
+                      <TableCell className="font-medium">{p.patient}</TableCell>
+                      <TableCell className="whitespace-nowrap">{p.visit}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                        {formatUsd(p.amount)}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                        {p.daysPending}d
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={severity === "critical" ? "destructive" : "secondary"}
+                          className="whitespace-nowrap font-medium"
+                        >
+                          {severityLabel}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </div>
         )}
       </CardContent>
     </Card>

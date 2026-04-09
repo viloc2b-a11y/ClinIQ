@@ -31,7 +31,7 @@ export function AnalyticsMvpPage() {
       { metric: "Critical items", value: "0", daysPending: 35, impactUsd: 0 },
     ],
     source: "fallback",
-    note: "Demo data",
+    note: "Executive metrics reflect the active study until live execution syncs.",
   })
 
   useEffect(() => {
@@ -51,10 +51,24 @@ export function AnalyticsMvpPage() {
 
   const rows = useMemo<AnalyticsRow[]>(() => snapshot.metrics, [snapshot.metrics])
 
+  const executiveTakeaway = useMemo(() => {
+    const { atRisk, critical } = snapshot.kpis
+    if (atRisk <= 0 && critical <= 0) {
+      return "As at-risk revenue and critical items accumulate, prioritize follow-up to protect billing windows and site margin."
+    }
+    if (critical > 0 && atRisk > 0) {
+      return "Critical aging and at-risk revenue are concentrated enough to justify immediate operational follow-up."
+    }
+    if (atRisk > 0) {
+      return `${formatUsd(atRisk)} is at risk in this window — address aging billables and leakage before exposure widens.`
+    }
+    return "Monitor critical items as execution updates — fast follow-up protects recoverable revenue."
+  }, [snapshot.kpis])
+
   return (
     <MvpShell
       title="Analytics"
-      subtitle="Executive snapshot: revenue at risk, leakage, delayed and critical items — aligned to the active study."
+      subtitle="Executive view of recoverable revenue, aging pressure, and critical items requiring action."
     >
       {loading ? (
         <MvpPageSkeleton />
@@ -63,10 +77,17 @@ export function AnalyticsMvpPage() {
           <StudyHeader />
           {snapshot.source === "fallback" ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              {snapshot.note ?? "Coordinated demo metrics — execution connection replaces with live totals."}
+              {snapshot.note ?? "Figures follow the active study; connect execution to refresh from site operations."}
             </p>
           ) : null}
           <KpiCards kpis={snapshot.kpis} />
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <p className="text-sm leading-relaxed text-foreground">{executiveTakeaway}</p>
+            {snapshot.kpis.critical > 0 ? (
+              <span className="text-xs font-medium text-destructive whitespace-nowrap">Critical aging</span>
+            ) : null}
+          </div>
 
           <Card>
             <CardHeader className="pb-0">
@@ -76,26 +97,30 @@ export function AnalyticsMvpPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Metric</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead>$ impact</TableHead>
-                    <TableHead>Days pending</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.map((r) => (
-                    <TableRow key={r.metric}>
-                      <TableCell className="font-medium">{r.metric}</TableCell>
-                      <TableCell>{r.value}</TableCell>
-                      <TableCell className="font-semibold">{formatUsd(r.impactUsd)}</TableCell>
-                      <TableCell className="font-semibold">{r.daysPending}</TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Metric</TableHead>
+                      <TableHead>Value</TableHead>
+                      <TableHead className="text-right">$ impact</TableHead>
+                      <TableHead className="text-right">Days pending</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((r) => (
+                      <TableRow key={r.metric}>
+                        <TableCell className="min-w-[220px] font-medium">{r.metric}</TableCell>
+                        <TableCell className="whitespace-nowrap tabular-nums">{r.value}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                          {formatUsd(r.impactUsd)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">{r.daysPending}d</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </>

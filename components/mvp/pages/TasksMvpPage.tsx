@@ -36,22 +36,26 @@ export function TasksMvpPage() {
   }, [demo.value])
 
   return (
-    <MvpShell title="Tasks">
+    <MvpShell
+      title="Tasks"
+      subtitle="Revenue recovery actions ranked by dollar exposure and aging — close these to protect billable revenue."
+    >
       <StudyHeader />
-      <div className="text-xs text-muted-foreground">
-        <span className="font-medium">Beta:</span> {demo.note}
-      </div>
+      <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">{demo.note}</p>
 
       <Card>
         <CardHeader className="pb-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle>Action Queue</CardTitle>
+            <div>
+              <CardTitle>Recovery actions</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">Each row ties to dollars still exposed on the study.</p>
+            </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" disabled>
-                Assign
+              <Button size="sm" disabled title="Assign owners when workflow is enabled">
+                Assign owner
               </Button>
-              <Button size="sm" variant="outline" disabled>
-                Mark done
+              <Button size="sm" variant="outline" disabled title="Complete tasks when workflow is enabled">
+                Mark complete
               </Button>
             </div>
           </div>
@@ -60,10 +64,10 @@ export function TasksMvpPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Task</TableHead>
-                <TableHead>$ Impact</TableHead>
-                <TableHead>Days Pending</TableHead>
-                <TableHead>Priority</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Revenue at risk</TableHead>
+                <TableHead>Aging</TableHead>
+                <TableHead>Urgency</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -72,9 +76,18 @@ export function TasksMvpPage() {
                 <TableRow key={t.id}>
                   <TableCell className="font-medium">{t.title}</TableCell>
                   <TableCell className="font-semibold">{formatUsd(t.amount)}</TableCell>
-                  <TableCell className="font-semibold">{t.daysPending}</TableCell>
+                  <TableCell className="font-semibold">{t.daysPending} days</TableCell>
                   <TableCell>
-                    <Badge variant={t.priority === "critical" ? "destructive" : "secondary"}>{t.priority}</Badge>
+                    <span className="inline-flex flex-wrap items-center gap-1">
+                      <Badge variant={t.priority === "critical" ? "destructive" : "secondary"} className="capitalize">
+                        {t.priority}
+                      </Badge>
+                      {t.priority === "critical" ? (
+                        <Badge variant="outline" className="text-[10px] font-normal text-destructive">
+                          Recover now
+                        </Badge>
+                      ) : null}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{t.status}</Badge>

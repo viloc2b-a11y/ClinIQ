@@ -1,10 +1,12 @@
 "use client"
 
 import { useDemoContext } from "@/components/demo/DemoContext"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 
+import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 import { KpiCards } from "@/components/mvp/KpiCards"
@@ -12,6 +14,7 @@ import { MvpPageSkeleton } from "@/components/mvp/MvpPageSkeleton"
 import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
 import { TopLeakageTable, type TopLeakageRow } from "@/components/mvp/TopLeakageTable"
+import { formatUsd } from "@/lib/mvp/format"
 import { getExecutionSummary, getLeakageRows } from "@/lib/mvp/backend"
 
 export function DashboardMvpPage() {
@@ -40,7 +43,7 @@ export function DashboardMvpPage() {
       if (summaryRes.source === "live" || leakageRes.source === "live") {
         setSourceNote(null)
       } else {
-        setSourceNote(summaryRes.note ?? leakageRes.note ?? "Coordinated demo data — connect execution to go live.")
+        setSourceNote(summaryRes.note ?? leakageRes.note ?? null)
       }
       setLoading(false)
     }
@@ -51,10 +54,43 @@ export function DashboardMvpPage() {
     }
   }, [studyKey])
 
+  const executiveCallout = useMemo(() => {
+    const { atRisk, delayed, critical } = kpis
+
+    if (atRisk <= 0) {
+      return <>No revenue at risk is displayed for this study in the current window.</>
+    }
+
+    let concentration = ""
+    if (delayed > 0 || critical > 0) {
+      concentration = ` Most exposure shows up as delayed billables (${delayed} delayed, ${critical} critical) and unresolved execution leakage — use the table below to prioritize.`
+    } else if (leakageRows.length > 0) {
+      concentration = " Work the highest-dollar leakage rows first to protect expected revenue."
+    } else {
+      concentration = " Open Billables and Leakage to surface aging and close the execution gap."
+    }
+
+    return (
+      <>
+        <span className="font-semibold text-foreground">{formatUsd(atRisk)}</span> is currently at risk across this
+        study.{concentration}
+      </>
+    )
+  }, [kpis, leakageRows])
+
   return (
     <MvpShell
       title="Dashboard"
-      subtitle="Revenue readiness, leakage hotspots, and recovery potential for the active study — one continuous story across the demo."
+      subtitle={
+        loading ? (
+          "Revenue concentration and recovery priority for the active study — same context across Billables, Leakage, and Counteroffer."
+        ) : (
+          <>
+            <span className="font-medium text-foreground">{formatUsd(kpis.atRisk)}</span> at risk across current
+            execution signals — prioritize recovery before billing windows close.
+          </>
+        )
+      }
     >
       {loading ? (
         <MvpPageSkeleton />
@@ -66,9 +102,28 @@ export function DashboardMvpPage() {
               {sourceNote}
             </p>
           ) : null}
+
+          <Card className="border-l-4 border-l-primary/80 bg-muted/20 shadow-none">
+            <CardContent className="flex flex-col gap-2 p-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <p className="text-sm leading-relaxed text-foreground">{executiveCallout}</p>
+              {kpis.critical > 0 ? (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 whitespace-nowrap border-destructive/40 font-medium text-destructive"
+                >
+                  Critical aging
+                </Badge>
+              ) : kpis.atRisk > 0 ? (
+                <Badge variant="outline" className="shrink-0 whitespace-nowrap font-medium text-muted-foreground">
+                  Recover now
+                </Badge>
+              ) : null}
+            </CardContent>
+          </Card>
+
           <KpiCards kpis={kpis} />
           <TopLeakageTable rows={leakageRows} />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pt-1">
             <Link href="/billables" className={cn(buttonVariants({ variant: "outline", size: "default" }))}>
               Pending billables
             </Link>

@@ -35,7 +35,7 @@ export function StudyHeader({ timeWindow = "Last 30 days" }: { timeWindow?: stri
           <span className="text-muted-foreground">{timeWindow}</span>
         </div>
         <p className="text-xs text-muted-foreground sm:max-w-xs sm:text-right">
-          All demo views use this study so KPIs, leakage, billables, and negotiation stay one story.
+          Active study context — KPIs, billables, leakage, and negotiation stay aligned to this cohort and window.
         </p>
       </CardContent>
     </Card>

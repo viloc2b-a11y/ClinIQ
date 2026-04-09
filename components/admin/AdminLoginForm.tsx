@@ -51,10 +51,10 @@ export function AdminLoginForm() {
   return (
     <Card className="mx-auto w-full max-w-md border-border/80 shadow-md">
       <CardHeader>
-        <CardTitle>Admin sign-in</CardTitle>
+        <CardTitle>Administrator sign-in</CardTitle>
         <CardDescription>
-          Sign in with an account listed in{" "}
-          <code className="rounded bg-muted px-1 text-xs">CLINIQ_ADMIN_EMAILS</code> (production).
+          Organization administrators sign in with an email configured in{" "}
+          <code className="rounded bg-muted px-1 text-xs">CLINIQ_ADMIN_EMAILS</code>.
         </CardDescription>
       </CardHeader>
       <CardContent>

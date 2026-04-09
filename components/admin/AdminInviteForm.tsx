@@ -45,11 +45,11 @@ export function AdminInviteForm() {
   return (
     <Card className="border-border/80">
       <CardHeader>
-        <CardTitle className="text-base">Invite user</CardTitle>
+        <CardTitle className="text-base">Invite teammate</CardTitle>
         <CardDescription>
-          Supabase sends an email with a link to set a password. Set{" "}
-          <code className="rounded bg-muted px-1 text-xs">CLINIQ_PUBLIC_APP_URL</code> on the
-          deploy so the link points to this app.
+          Sends an email with a secure link to set a password. Set{" "}
+          <code className="rounded bg-muted px-1 text-xs">CLINIQ_PUBLIC_APP_URL</code> on the deployment so the link
+          resolves to this application.
         </CardDescription>
       </CardHeader>
       <CardContent>
