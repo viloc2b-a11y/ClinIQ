@@ -160,7 +160,6 @@ export function CounterofferMvpPage() {
                       <TableHead>Δ</TableHead>
                       <TableHead>Priority</TableHead>
                       <TableHead>Justification</TableHead>
-                      <TableHead>Days pending</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -172,7 +171,6 @@ export function CounterofferMvpPage() {
                         <TableCell className="font-semibold">{formatUsd(r.delta)}</TableCell>
                         <TableCell>{priorityBadge(r.priority)}</TableCell>
                         <TableCell className="max-w-[420px] whitespace-normal text-muted-foreground">{r.justification}</TableCell>
-                        <TableCell className="font-semibold">{r.daysPending}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

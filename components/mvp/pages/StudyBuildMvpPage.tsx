@@ -46,7 +46,6 @@ export function StudyBuildMvpPage() {
               <TableRow>
                 <TableHead>Area</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Days Pending</TableHead>
                 <TableHead>$ Impact</TableHead>
               </TableRow>
             </TableHeader>
@@ -57,7 +56,6 @@ export function StudyBuildMvpPage() {
                   <TableCell>
                     <Badge variant={r.status === "ready" ? "secondary" : "outline"}>{r.status}</Badge>
                   </TableCell>
-                  <TableCell className="font-semibold">{r.daysPending}</TableCell>
                   <TableCell className="font-semibold">{formatUsd(r.impactUsd)}</TableCell>
                 </TableRow>
               ))}

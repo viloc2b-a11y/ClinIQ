@@ -108,7 +108,6 @@ export function DocumentsMvpPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Confidence</TableHead>
-                  <TableHead>Days Pending</TableHead>
                   <TableHead>$ Impact</TableHead>
                 </TableRow>
               </TableHeader>
@@ -122,7 +121,6 @@ export function DocumentsMvpPage() {
                       <TableCell>{d.type}</TableCell>
                       <TableCell>{statusBadge(d.status)}</TableCell>
                       <TableCell>{Math.round(d.confidence * 100)}%</TableCell>
-                      <TableCell className="font-semibold">{d.daysPending}</TableCell>
                       <TableCell className="font-semibold">{formatUsd(d.impactUsd)}</TableCell>
                     </TableRow>
                   ))}
@@ -143,7 +141,6 @@ export function DocumentsMvpPage() {
                 <TableHead>Visit</TableHead>
                 <TableHead>Procedure</TableHead>
                 <TableHead>Rate</TableHead>
-                <TableHead>Days Pending</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -152,7 +149,6 @@ export function DocumentsMvpPage() {
                   <TableCell className="font-medium">{row.visit}</TableCell>
                   <TableCell>{row.procedure}</TableCell>
                   <TableCell>{formatUsd(row.rate)}</TableCell>
-                  <TableCell className="font-semibold">{row.days}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
