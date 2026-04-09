@@ -16,6 +16,8 @@ type Phase = "draft" | "negotiating" | "active" | "closeout"
 type DashboardRow = {
   study_key: string
   phase: Phase
+  sponsor_name: string | null
+  cro_name: string | null
   upside: number
   expected_revenue: number
   billed_revenue: number
@@ -167,6 +169,7 @@ export function DashboardCommandCenterPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Study</TableHead>
+                    <TableHead>Sponsor / CRO</TableHead>
                     <TableHead>Phase</TableHead>
                     <TableHead className="text-right">Negotiation</TableHead>
                     <TableHead className="text-right">Expected</TableHead>
@@ -181,6 +184,11 @@ export function DashboardCommandCenterPage() {
                   {rows.map((r) => (
                     <TableRow key={r.study_key}>
                       <TableCell className="whitespace-nowrap font-medium">{r.study_key}</TableCell>
+                      <TableCell className="min-w-[200px] text-sm text-muted-foreground">
+                        {(r.sponsor_name || r.cro_name)
+                          ? [r.sponsor_name, r.cro_name].filter(Boolean).join(" · ")
+                          : "—"}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap">{phaseBadge(r.phase)}</TableCell>
                       <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
                         {r.phase === "negotiating" && r.upside > 0 ? `+${formatUsd(r.upside)}` : "—"}

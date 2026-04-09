@@ -92,7 +92,7 @@ export function DocumentsMvpPage() {
                 onChange={(e) => onFilesSelected(e.target.files)}
               />
             </label>
-            <Link href="/import" className={cn(buttonVariants({ variant: "outline" }))}>
+            <Link href="/import/demo" className={cn(buttonVariants({ variant: "outline" }))}>
               Analyze &amp; start intake
             </Link>
           </CardContent>
