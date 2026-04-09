@@ -1,5 +1,5 @@
 import { ensureUserPrimarySite } from "@/lib/import/ensure-user-primary-site"
-import { computeNegotiationFinancialSummary, stableNegotiationLineKey } from "@/lib/negotiation/financial"
+import { stableNegotiationLineKey } from "@/lib/negotiation/financial"
 import { createServerSupabaseClient } from "@/supabase/server"
 import { NextResponse } from "next/server"
 
@@ -147,27 +147,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing items[]" }, { status: 400 })
   }
 
-  // Concurrency gate: deal version must match expectedVersion.
-  const { data: deal, error: dealErr } = await supabase
-    .from("negotiation_deals")
-    .select("deal_id, version, last_updated_at, last_updated_by")
-    .eq("deal_id", dealId)
-    .maybeSingle()
-
-  if (dealErr) return NextResponse.json({ ok: false, error: dealErr.message }, { status: 500 })
-  const v = (deal as { version?: number } | null)?.version
-  if (typeof v !== "number") return NextResponse.json({ ok: false, error: "Deal not found" }, { status: 404 })
-  if (v !== expectedVersion) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Conflict: deal changed since you loaded it",
-        conflict: { expectedVersion, current: deal },
-      },
-      { status: 409 },
-    )
-  }
-
   const rows = rawItems.map((raw): Record<string, unknown> => {
     const it = raw as Partial<NegotiationItemUpsert>
     const status = it.status
@@ -188,8 +167,6 @@ export async function POST(req: Request) {
 
     return {
       deal_id: dealId,
-      user_id: user.id,
-      site_id: siteId,
       study_key: studyKey,
       study_name: studyName,
       stable_key: stableKey,
@@ -205,78 +182,49 @@ export async function POST(req: Request) {
       proposed_price: asNumber(it.proposedPrice),
       justification: asString(it.justification),
       status,
-      updated_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
     }
   })
 
   try {
-    const { error } = await supabase
-      .from("negotiation_items")
-      .upsert(rows, { onConflict: "deal_id,source_line_id" })
+    const itemsPayload = rows.map((r) => ({
+      stable_key: r.stable_key,
+      source_line_id: r.source_line_id,
+      line_code: r.line_code,
+      label: r.label,
+      category: r.category,
+      visit_name: r.visit_name,
+      quantity: r.quantity,
+      unit: r.unit,
+      current_price: r.current_price,
+      internal_cost: r.internal_cost,
+      proposed_price: r.proposed_price,
+      justification: r.justification,
+      status: r.status,
+    }))
+
+    const { data, error } = await supabase.rpc("save_negotiation_items_atomic", {
+      p_deal_id: dealId,
+      p_expected_version: expectedVersion,
+      p_site_id: siteId,
+      p_study_key: studyKey,
+      p_study_name: studyName,
+      p_items: itemsPayload,
+    })
 
     if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+      const msg = error.message ?? "Save failed"
+      if (msg.includes("not_found:deal")) return NextResponse.json({ ok: false, error: "Deal not found" }, { status: 404 })
+      if (msg.includes("conflict:version") || msg.includes("conflict:deal_closed")) {
+        return NextResponse.json({ ok: false, error: "Conflict: deal changed since you loaded it" }, { status: 409 })
+      }
+      if (msg.includes("unauthorized")) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 })
+      if (msg.includes("forbidden")) return NextResponse.json({ ok: false, error: "Forbidden: you are not a member of that site" }, { status: 403 })
+      if (msg.includes("invalid_input")) return NextResponse.json({ ok: false, error: msg }, { status: 400 })
+      return NextResponse.json({ ok: false, error: msg }, { status: 500 })
     }
 
-    // Audit snapshot (save-history).
-    const financials = computeNegotiationFinancialSummary(
-      rows.map((r) => ({
-        current_price: Number(r.current_price) || 0,
-        internal_cost: Number(r.internal_cost) || 0,
-        proposed_price: Number(r.proposed_price) || 0,
-        status: (r.status as "pending" | "accepted" | "rejected") ?? "pending",
-      })),
-    )
-    const { error: snapErr } = await supabase.from("negotiation_round_snapshots").insert({
-      deal_id: dealId,
-      user_id: user.id,
-      site_id: siteId,
-      study_key: studyKey,
-      study_name: studyName,
-      kind: "save",
-      financials,
-      items: rows.map((r) => ({
-        stable_key: r.stable_key,
-        source_line_id: r.source_line_id,
-        line_code: r.line_code,
-        label: r.label,
-        category: r.category,
-        visit_name: r.visit_name,
-        quantity: r.quantity,
-        unit: r.unit,
-        current_price: r.current_price,
-        internal_cost: r.internal_cost,
-        proposed_price: r.proposed_price,
-        justification: r.justification,
-        status: r.status,
-      })),
-    })
-    if (snapErr) {
-      return NextResponse.json({ ok: false, error: snapErr.message }, { status: 500 })
-    }
-
-    // Bump deal version + last_updated fields.
-    const nextVersion = expectedVersion + 1
-
-    const { data: bumped, error: bumpErr } = await supabase
-      .from("negotiation_deals")
-      .update({
-        last_updated_at: new Date().toISOString(),
-        last_updated_by: user.id,
-        version: nextVersion,
-      })
-      .eq("deal_id", dealId)
-      .eq("version", expectedVersion)
-      .select("version, last_updated_at, last_updated_by")
-      .maybeSingle()
-
-    if (bumpErr) {
-      return NextResponse.json({ ok: false, error: bumpErr.message }, { status: 500 })
-    }
-    if (!bumped) {
-      return NextResponse.json({ ok: false, error: "Conflict: deal changed while saving" }, { status: 409 })
-    }
-
+    const bumped = Array.isArray(data) ? data[0] : (data as any)
     return NextResponse.json({ ok: true, siteId, deal: bumped ?? null })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
