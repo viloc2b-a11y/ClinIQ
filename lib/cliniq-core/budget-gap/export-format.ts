@@ -1,4 +1,5 @@
 import { budgetGapResultToNegotiationEngineInput } from "./negotiation-input"
+import type { BudgetGapAnalysisJsonDocument } from "./export-budget-gap-json"
 import type { BudgetGapLine, CompareBudgetInput, CompareBudgetResult } from "./types"
 
 function csvEscapeCell(value: string): string {
@@ -87,3 +88,62 @@ export function buildBudgetGapAnalysisExport(
     ),
   }
 }
+
+const BUDGET_GAP_ANALYSIS_DOC_CSV_HEADERS = [
+  "line_code",
+  "category",
+  "label",
+  "visit_name",
+  "status",
+  "internal_total",
+  "sponsor_total_offer",
+  "gap_amount",
+  "notes_or_rationale",
+] as const
+
+function rowFromAnalysisGapLine(
+  l: BudgetGapAnalysisJsonDocument["gapLines"][number],
+): string[] {
+  return [
+    l.lineCode,
+    l.category,
+    l.label,
+    l.visitName,
+    l.status,
+    String(l.internalTotal),
+    String(l.sponsorTotalOffer),
+    String(l.gapAmount),
+    l.notes ?? "",
+  ].map(csvEscapeCell)
+}
+
+function rowFromAnalysisMissing(
+  m: BudgetGapAnalysisJsonDocument["missingInvoiceables"][number],
+): string[] {
+  return [
+    m.lineCode,
+    m.category,
+    m.label,
+    m.visitName,
+    m.status,
+    String(m.internalTotal),
+    "0",
+    String(m.gapAmount),
+    m.notes ?? "",
+  ].map(csvEscapeCell)
+}
+
+/**
+ * One row per `gapLines` entry, then one per `missingInvoiceable` (RFC 4180-style),
+ * from the canonical budget-gap JSON document shape.
+ */
+export function budgetGapAnalysisToCsv(doc: BudgetGapAnalysisJsonDocument): string {
+  const headerRow = BUDGET_GAP_ANALYSIS_DOC_CSV_HEADERS.join(",")
+  const dataRows = [
+    ...doc.gapLines.map((l) => rowFromAnalysisGapLine(l).join(",")),
+    ...doc.missingInvoiceables.map((m) => rowFromAnalysisMissing(m).join(",")),
+  ]
+  return [headerRow, ...dataRows].join("\n")
+}
+
+export type BudgetGapAnalysisCsvColumn = (typeof BUDGET_GAP_ANALYSIS_DOC_CSV_HEADERS)[number]

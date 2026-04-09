@@ -8,13 +8,23 @@ import type {
   SiteCostProfile,
 } from "@/lib/cliniq-core/cost-truth/cost-types"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url) {
+    throw new Error("NEXT_PUBLIC_SUPABASE_URL is required.")
+  }
+  if (!serviceKey) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY is required.")
+  }
+
+  return createClient(url, serviceKey)
+}
 
 export async function GET(request: Request) {
   try {
+    const supabase = getSupabase()
     const { searchParams } = new URL(request.url)
 
     const procedureId = searchParams.get("procedure_id")

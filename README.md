@@ -54,11 +54,29 @@ cd ClinIQ
 cp .env.example .env.local
 # Edit .env.local: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
 # SUPABASE_SERVICE_ROLE_KEY (see [Setup](#setup) for self-hosted Supabase).
+# Optional: CLINIQ_ADMIN_EMAILS, CLINIQ_PUBLIC_APP_URL (admin + invites),
+# CLINIQ_API_SECRET (if set, POST /api/ingest-event requires Authorization: Bearer …).
 npm install
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). Some routes need valid Supabase keys; others work for local UI and tests.
+
+### Web UI (main routes)
+
+| Route | Role |
+|-------|------|
+| `/` | Demo entry (SoA / engine narrative) |
+| `/dashboard` | **Workbench** — documents (placeholder + link to AR flow), site/study context (localStorage + JSON APIs), live execution (`/api/execution/run`), analysis, and negotiation links |
+| `/dashboard/ar` | Document ingest panel (placeholder) + **AR demo** (real engine) |
+| `/sales` | Presentation mode — product map and short walkthrough |
+| `/admin` | **Admin** — Supabase session; invite users by email (`inviteUserByEmail`, service role). Requires allowlist (see below) |
+| `/admin/login` | Admin login |
+| `/auth/login` | **Coordinator** sign-in (Supabase email/password); required before `/import` |
+| `/import` | **Multiformat budget import** (Excel / PDF / Word) → review → draft in Supabase → handoff to Budget Gap. Requires auth + migration `20260407130000_cliniq_import_sites_budget_drafts.sql` applied |
+| `/budget-gap`, `/negotiation`, `/action-center`, `/claims`, `/ledger` | Existing product modules |
+
+Auth callback for invites and magic links: `GET /auth/callback` (exchanges `code` for session; supports `next=` for `/admin` vs app routes).
 
 **2 — FastAPI backend (port 8000, optional)**
 
@@ -88,6 +106,7 @@ cd "path/to/cliniq"
 cp .env.example .env.local
 # Edit .env.local: set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
 # and SUPABASE_SERVICE_ROLE_KEY for server routes (see below).
+# Admin: CLINIQ_ADMIN_EMAILS (comma-separated); CLINIQ_PUBLIC_APP_URL for invite redirect links.
 npm install
 npm run dev
 ```
@@ -101,6 +120,8 @@ ClinIQ is wired for a **self-hosted** Supabase instance (for example on your own
 - **Environment:** copy `.env.example` → `.env.local` and fill in your instance URL and keys. Never commit `.env.local`.
 - **Schema changes:** apply DDL through **your** Supabase Studio (or SQL against Postgres directly). This repo keeps SQL under `supabase/migrations/` and `supabase/schema/` as reference; there is no requirement to use `supabase link` or `supabase login` against Supabase Cloud.
 - **App clients:** `supabase/server.ts` uses `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Route handlers that need elevated access (for example `app/api/cost-from-db`) use `SUPABASE_SERVICE_ROLE_KEY` — server-only.
+
+**Admin and user invites:** Set `CLINIQ_ADMIN_EMAILS` to a comma-separated list of emails allowed to access `/admin` and to call `POST /api/admin/invite`. In **production**, if this variable is empty, no email is treated as admin. In **development**, an empty list allows any signed-in user as admin (local convenience only). Set `CLINIQ_PUBLIC_APP_URL` to the public origin of this Next app (no trailing slash), e.g. `https://app.example.com`, so Supabase invite emails redirect to `/auth/callback`. In Supabase Auth settings, allow that callback URL.
 
 Optional direct Postgres URL (psql, GUI tools) can live in `.env.local` as `DATABASE_URL`; keep it out of git.
 
@@ -148,7 +169,11 @@ Public entry: `import { … } from "@/lib/cliniq-core/ar"` (or relative path to 
 |-------|------|
 | `GET /api/action-center` | Bootstrap memory Action Center (if needed), return items + summary from persistence |
 | `POST /api/action-center/mutate` | Apply row actions against persisted items |
-| `POST /api/ingest-event` | Body: `event` + `expectedBillables` → `ingestEvent`; response includes optional **`actionCenterSync`** (`insertedCount` / `updatedCount` / `unchangedCount` when `ok: true`, or `ok: false` + `error` without failing the core ingest) |
+| `POST /api/ingest-event` | Body: `event` + `expectedBillables` → `ingestEvent`; response includes optional **`actionCenterSync`**. If `CLINIQ_API_SECRET` is set in the environment, requests must send `Authorization: Bearer <secret>`. |
+| `POST /api/admin/invite` | JSON `{ "email": "…" }` — Supabase `inviteUserByEmail` (service role). Session user must be on `CLINIQ_ADMIN_EMAILS`. |
+| `GET /api/execution/*` | Execution data helpers (e.g. `run`, `expected-billables`, `event-log`, `summary`) — require server Supabase URL + service role where applicable |
+
+Demo seed for execution dashboard: `supabase/seed/execution_demo_seed_v1.sql` (apply via Supabase Studio when your schema matches; resolve any legacy column conflicts locally first).
 
 ## Tests
 
@@ -178,7 +203,7 @@ See `scripts/README.md` for conventions.
 
 ## Structure
 
-- App routes and UI: `app/`, `components/` (including `app/api/action-center/`, `app/api/ingest-event/`)
+- App routes and UI: `app/`, `components/` (including `components/workbench/`, `components/admin/`, `app/api/action-center/`, `app/api/ingest-event/`, `app/api/admin/`, `app/auth/callback/`)
 - Deterministic analysis + revenue demos: `lib/cliniq-core/analysis/`, `lib/cliniq-core/demo/`
 - Product notes: `docs/product-architecture.md`, `features/README.md`, `docs/cliniq-billing-to-cash-overview.md`, `docs/cliniq-demo-walkthrough.md`, `docs/cliniq-value-narrative.md`
 - Database SQL and Supabase app helpers: `supabase/` (client, server, middleware, migrations, seed)

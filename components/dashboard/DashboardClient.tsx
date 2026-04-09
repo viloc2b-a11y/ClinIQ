@@ -10,10 +10,13 @@ import {
   type DocumentTypeOption,
 } from "@/components/dashboard/DocumentIngestPanel"
 import { DocumentViewer } from "@/components/dashboard/DocumentViewer"
-import {
-  type PlaceholderStructuredOutput,
-  StructuredOutputPanel,
-} from "@/components/dashboard/StructuredOutputPanel"
+import { StructuredOutputPanel } from "@/components/dashboard/StructuredOutputPanel"
+
+type PlaceholderStructuredOutput = {
+  type: string
+  status: string
+  notes: string
+}
 
 type DashboardClientProps = {
   asOfDate: string
@@ -27,7 +30,7 @@ export function DashboardClient({ asOfDate, initialArDemo }: DashboardClientProp
   const [extractedText, setExtractedText] = useState<string | null>(null)
   const [structuredOutput, setStructuredOutput] =
     useState<PlaceholderStructuredOutput | null>(null)
-  const [demoData, setDemoData] = useState<ArDemoScenarioResult | null>(null)
+  const [demoData, setDemoData] = useState<ArDemoScenarioResult | null>(initialArDemo)
   const [reviewed, setReviewed] = useState(false)
 
   const uploadedFileName = uploadedFile?.name ?? null
@@ -108,15 +111,20 @@ export function DashboardClient({ asOfDate, initialArDemo }: DashboardClientProp
 
   return (
     <div className="flex min-h-full flex-col">
-      <header className="border-b border-border bg-card px-4 py-3">
-        <h1 className="text-lg font-semibold">ClinIQ Dashboard v1</h1>
-        <p className="text-xs text-muted-foreground">
-          Validation surface: document ingest (placeholder) · AR (real engine, as-of{" "}
-          <span className="font-mono">{asOfDate}</span>)
-        </p>
+      <header className="border-b border-border/60 bg-background/80 px-4 py-5 backdrop-blur-sm sm:px-6">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wider">
+            AR &amp; collections
+          </p>
+          <h1 className="text-lg font-semibold tracking-tight sm:text-xl">Documents and collections</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground leading-relaxed">
+            Upload and preview on the left; collections and risk on the right (demo data, as of{" "}
+            <span className="font-mono text-foreground/90">{asOfDate}</span>).
+          </p>
+        </div>
       </header>
 
-      <div className="grid flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-12 lg:gap-3">
+      <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 gap-4 p-4 sm:px-6 lg:grid-cols-12 lg:gap-3 lg:py-6">
         <div className="lg:col-span-3">
           <DocumentIngestPanel
             documentType={documentType}
@@ -139,8 +147,8 @@ export function DashboardClient({ asOfDate, initialArDemo }: DashboardClientProp
 
         <div className="flex flex-col gap-3 lg:col-span-5">
           <StructuredOutputPanel
+            asOfDate={asOfDate}
             demoData={demoData}
-            structuredOutput={structuredOutput}
             onQueueRowClick={handleQueueRowClick}
           />
           <ActionBar

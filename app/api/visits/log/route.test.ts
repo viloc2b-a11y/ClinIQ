@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest"
 
-vi.mock("./python-bridge", () => ({
-  runPythonLogVisit: vi.fn(),
+vi.mock("./log-visit", () => ({
+  logVisit: vi.fn(),
 }))
 
-import { runPythonLogVisit } from "./python-bridge"
+import { logVisit } from "./log-visit"
 import { POST } from "./route"
 
 describe("POST /api/visits/log", () => {
@@ -22,15 +22,15 @@ describe("POST /api/visits/log", () => {
     expect(j.message).toMatch(/required/i)
   })
 
-  it("accepts valid visit payload and maps to Python", async () => {
-    vi.mocked(runPythonLogVisit).mockResolvedValue({
+  it("accepts valid visit payload", async () => {
+    vi.mocked(logVisit).mockResolvedValue({
       ok: true,
       study_id: "S-1",
       subject_id: "SUB-001",
       visit_name: "Screening Visit",
       triggered_count: 0,
       events_emitted: 1,
-      message: "Visit logged successfully",
+      message: "Visit accepted (Node/TS).",
     })
 
     const res = await POST(
@@ -54,11 +54,10 @@ describe("POST /api/visits/log", () => {
       studyId: "S-1",
       subjectId: "SUB-001",
       visitName: "Screening Visit",
-      message: "Visit logged successfully",
+      message: "Visit accepted (Node/TS).",
     })
 
-    expect(runPythonLogVisit).toHaveBeenCalledWith(
-      expect.any(String),
+    expect(logVisit).toHaveBeenCalledWith(
       expect.objectContaining({
         study_id: "S-1",
         subject_id: "SUB-001",
@@ -69,10 +68,10 @@ describe("POST /api/visits/log", () => {
     )
   })
 
-  it("returns clear error when Python bridge fails", async () => {
-    vi.mocked(runPythonLogVisit).mockResolvedValue({
+  it("returns clear error when log fails", async () => {
+    vi.mocked(logVisit).mockResolvedValue({
       ok: false,
-      error: "Python crashed",
+      error: "Log failed",
     })
 
     const res = await POST(
@@ -90,6 +89,6 @@ describe("POST /api/visits/log", () => {
     expect(res.status).toBe(502)
     const j = await res.json()
     expect(j.ok).toBe(false)
-    expect(j.message).toBe("Python crashed")
+    expect(j.message).toBe("Log failed")
   })
 })

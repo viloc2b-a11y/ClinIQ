@@ -11,8 +11,8 @@ import { mkdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
 import { compareSponsorBudgetToInternalBudget } from "../lib/cliniq-core/budget-gap/compare"
-import { writeBudgetGapAnalysisCsvFromJsonFile } from "../lib/cliniq-core/budget-gap/export-budget-gap-csv"
-import { writeBudgetGapAnalysisJson } from "../lib/cliniq-core/budget-gap/export-budget-gap-json"
+import { writeBudgetGapAnalysisCsvFromJsonFile } from "../lib/cliniq-core/budget-gap/export-budget-gap-csv-node"
+import { writeBudgetGapAnalysisJson } from "../lib/cliniq-core/budget-gap/export-budget-gap-json-node"
 import type {
   CompareBudgetInput,
   InternalBudgetLine,

@@ -13,8 +13,9 @@ import {
   TrendingDown,
   Upload,
 } from "lucide-react"
+import { CLINIQ_BUDGET_GAP_HANDOFF_KEY } from "@/lib/budget-gap/handoff-session"
 import { useRouter } from "next/navigation"
-import { useCallback, useMemo, useRef, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -227,6 +228,25 @@ export default function BudgetGapAnalyzerPage() {
     [runCompare],
   )
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(CLINIQ_BUDGET_GAP_HANDOFF_KEY)
+      if (!raw) return
+      sessionStorage.removeItem(CLINIQ_BUDGET_GAP_HANDOFF_KEY)
+      const data = JSON.parse(raw) as PastedPayload
+      const internalLines = Array.isArray(data.internalLines) ? data.internalLines : []
+      const sponsorLines = Array.isArray(data.sponsorLines) ? data.sponsorLines : []
+      const studyMeta: BudgetStudyMeta = data.studyMeta ?? {
+        studyId: "imported",
+        studyName: "Imported budget",
+        patientsInBudget: 1,
+      }
+      simulateAnalyze(internalLines, sponsorLines, studyMeta)
+    } catch {
+      /* ignore bad handoff */
+    }
+  }, [simulateAnalyze])
+
   const onLoadMock = () => {
     setPaste("")
     simulateAnalyze(
@@ -322,9 +342,9 @@ export default function BudgetGapAnalyzerPage() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-6xl flex-col gap-8 px-4 py-8 md:px-6">
-      <header className="space-y-2">
+      <header className="space-y-2 border-b border-border/60 pb-6">
         <p className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
-          Module 3 · Budget gap
+          Analysis · Budget gap
         </p>
         <h1 className="font-semibold text-2xl tracking-tight md:text-3xl">
           Budget Gap Analyzer

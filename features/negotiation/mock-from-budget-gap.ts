@@ -1,8 +1,8 @@
+import { compareSponsorBudgetToInternalBudget } from "@/lib/cliniq-core/budget-gap/compare"
 import {
   budgetGapResultToNegotiationEngineInput,
-  compareSponsorBudgetToInternalBudget,
-} from "@/lib/cliniq-core/budget-gap"
-import type { NegotiationEngineInput } from "@/lib/cliniq-core/budget-gap"
+  type NegotiationEngineInput,
+} from "@/lib/cliniq-core/budget-gap/negotiation-input"
 import {
   houstonKatyDiabetesStudyMeta,
   houstonKatyInternalBudgetLines,

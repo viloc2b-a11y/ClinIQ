@@ -45,17 +45,17 @@ export default function PostAwardLedgerDemo() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6 font-mono text-sm">
-      <div className="space-y-1 font-sans">
-        <p className="text-muted-foreground text-xs uppercase tracking-wide">
-          Module 5 · Post-award ledger
+    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 pb-16 font-mono text-sm sm:px-6">
+      <header className="space-y-2 border-b border-border/60 pb-6 font-sans">
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+          Finance · Post-award ledger
         </p>
-        <h1 className="font-semibold text-lg">Ledger demo</h1>
-        <p className="text-muted-foreground text-sm">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Ledger demo</h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Mock budget → expected billables; mock events → billable instances; ledger + leakage
           (no external systems).
         </p>
-      </div>
+      </header>
       <section className="space-y-2">
         <h2 className="font-sans font-medium text-foreground text-xs uppercase tracking-wide">
           Summary

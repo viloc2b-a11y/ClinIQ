@@ -1,6 +1,7 @@
 /**
  * Budget gap (Module 3) + pre-award negotiation (Module 4).
  * Negotiation exports are pure transforms only — no event system or DB I/O.
+ * `budgetGapAnalysisToCsv` lives in `./export-format` (re-exported below).
  * @see NEGOTIATION_ENGINE.md
  */
 export {
@@ -31,22 +32,21 @@ export {
   getEscalationFactor,
   type EscalatedNegotiationTarget,
 } from "./pricing-escalation"
-export { buildBudgetGapAnalysisExport, gapLinesToCsv } from "./export-format"
-export type { BudgetGapAnalysisExport } from "./export-format"
+export {
+  budgetGapAnalysisToCsv,
+  buildBudgetGapAnalysisExport,
+  gapLinesToCsv,
+} from "./export-format"
+export type {
+  BudgetGapAnalysisCsvColumn,
+  BudgetGapAnalysisExport,
+} from "./export-format"
 export {
   BUDGET_GAP_ANALYSIS_JSON_SCHEMA_VERSION,
   buildBudgetGapAnalysisJsonDocument,
-  readBudgetGapAnalysisJsonDocument,
   serializeBudgetGapAnalysisJson,
-  writeBudgetGapAnalysisJson,
-  writeBudgetGapAnalysisJsonDocument,
 } from "./export-budget-gap-json"
 export type { BudgetGapAnalysisJsonDocument } from "./export-budget-gap-json"
-export {
-  budgetGapAnalysisToCsv,
-  writeBudgetGapAnalysisCsvFromJsonFile,
-} from "./export-budget-gap-csv"
-export type { BudgetGapAnalysisCsvColumn } from "./export-budget-gap-csv"
 export {
   CRITICAL_INVOICEABLE_CATEGORY_PATTERNS,
   isCriticalInvoiceableCategory,

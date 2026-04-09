@@ -59,16 +59,16 @@ export default function ClaimsInvoicePage() {
   }, [])
 
   return (
-    <main className="mx-auto max-w-3xl space-y-6 p-6 font-mono text-xs">
-      <div className="space-y-1 font-sans">
-        <p className="text-muted-foreground text-[0.65rem] uppercase tracking-wide">
-          Claims / invoice output
+    <main className="mx-auto max-w-6xl space-y-6 px-4 py-8 pb-16 font-mono text-xs sm:px-6">
+      <header className="space-y-2 border-b border-border/60 pb-6 font-sans">
+        <p className="text-muted-foreground text-xs font-medium uppercase tracking-wider">
+          Finance · Claims
         </p>
-        <h1 className="font-semibold text-lg">Post-award claims</h1>
-        <p className="text-muted-foreground text-sm">
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Post-award claims</h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
           Claim items from operational ledger rows; invoice packages exclude review-needed lines.
         </p>
-      </div>
+      </header>
 
       <section className="space-y-2 font-sans">
         <h2 className="font-medium text-foreground text-[0.65rem] uppercase tracking-wide">

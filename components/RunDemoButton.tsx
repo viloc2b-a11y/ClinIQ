@@ -43,7 +43,7 @@ export default function RunDemoButton() {
           fontWeight: 600,
         }}
       >
-        {loading ? "Running ClinIQ Demo..." : "Run ClinIQ Demo"}
+        {loading ? "Running ClinIQ Financial demo..." : "Run ClinIQ Financial demo"}
       </button>
 
       {error && (
