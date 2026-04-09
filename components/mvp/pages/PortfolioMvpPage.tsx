@@ -11,13 +11,14 @@ import { StudyHeader } from "@/components/mvp/StudyHeader"
 import { cn } from "@/lib/utils"
 import { formatUsd } from "@/lib/mvp/format"
 
-type Phase = "draft" | "negotiating" | "active"
+type Phase = "draft" | "negotiating" | "active" | "closeout"
 
 type PortfolioStudy = {
   study_key: string
   phase: Phase
   upside: number | null
   missing_revenue: number | null
+  closeout_exposure?: number | null
   next_action: string
 }
 
@@ -40,9 +41,10 @@ export function PortfolioMvpPage() {
         const studies = Array.isArray(json.data?.studies) ? (json.data.studies as any[]) : []
         const mapped: PortfolioStudy[] = studies.map((s) => ({
           study_key: String(s.study_key ?? "—"),
-          phase: (String(s.phase ?? "draft") as Phase) ?? "draft",
+          phase: (String(s.phase ?? "draft") as any) ?? "draft",
           upside: s.upside == null ? null : (Number(s.upside) || 0),
           missing_revenue: s.missing_revenue == null ? null : (Number(s.missing_revenue) || 0),
+          closeout_exposure: s.closeout_exposure == null ? null : (Number(s.closeout_exposure) || 0),
           next_action: String(s.next_action ?? "Review study"),
         }))
         if (!cancelled) setRows(mapped)
