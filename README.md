@@ -215,3 +215,42 @@ npm run build && npm start
 ```
 
 Run commands from this directory so `turbopack.root` matches this app.
+
+## GitHub sync + PR order (production safety)
+
+ClinIQ Financial has two separate change tracks that should **not** be merged out of order:
+
+1. **Hardening baseline (merge first)** — correct status codes, eliminate silent failures, prevent NaN propagation, enforce version conflict + audit integrity.
+2. **Negotiation atomic RPC (merge second)** — move critical negotiation write paths into Postgres transactions via Supabase RPC to eliminate partial writes.
+
+Keep these PRs separate to preserve review clarity, rollback safety, and validation.
+
+## Vercel deploy (Next.js app)
+
+This repository’s primary deploy target is the Next.js app at repo root.
+
+### One-time setup
+
+1. In Vercel, import the GitHub repo.
+2. **Framework preset:** Next.js
+3. **Root directory:** repository root
+4. **Build command:** `npm run build`
+5. **Output:** default
+
+### Required environment variables
+
+Set these in Vercel Project → Settings → Environment Variables:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only; required for server routes that read/write protected tables)
+
+Optional (admin/invites):
+
+- `CLINIQ_ADMIN_EMAILS`
+- `CLINIQ_PUBLIC_APP_URL` (set to your Vercel production URL or custom domain, no trailing slash)
+
+### Deploy flow
+
+- Push to `main` to trigger the production deployment (or use your team’s preferred branch policy).
+- If a deployment fails with Windows/OneDrive `EPERM` locally, that does not affect Vercel; Vercel builds in Linux containers.
