@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { formatUsd, type MvpKpis } from "@/lib/mvp/mock"
+import { formatUsd } from "@/lib/mvp/format"
 
 function KpiCard({ label, value }: { label: string; value: string }) {
   return (
@@ -16,7 +16,7 @@ function KpiCard({ label, value }: { label: string; value: string }) {
   )
 }
 
-export function KpiCards({ kpis }: { kpis: MvpKpis }) {
+export function KpiCards({ kpis }: { kpis: { ready: number; atRisk: number; delayed: number; critical: number } }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <KpiCard label="Ready to Bill" value={formatUsd(kpis.ready)} />

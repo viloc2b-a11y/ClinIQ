@@ -1,3 +1,6 @@
+"use client"
+
+import { DemoProvider } from "@/components/demo/DemoContext"
 import { AppTopNav } from "@/components/layout/AppTopNav"
 
 /**
@@ -5,9 +8,11 @@ import { AppTopNav } from "@/components/layout/AppTopNav"
  */
 export function AppChrome({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-background">
-      <AppTopNav />
-      {children}
-    </div>
+    <DemoProvider>
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 via-background to-background">
+        <AppTopNav />
+        {children}
+      </div>
+    </DemoProvider>
   )
 }

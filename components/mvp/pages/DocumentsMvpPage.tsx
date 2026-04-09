@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
-import { MVP_MOCK, formatUsd } from "@/lib/mvp/mock"
+import { getDocumentsDemo } from "@/lib/mvp/backend"
+import { formatUsd } from "@/lib/mvp/format"
 
 type DocStatus = "processing" | "ready" | "error"
 
@@ -28,54 +29,50 @@ function statusBadge(status: DocStatus) {
 }
 
 export function DocumentsMvpPage() {
-  const [uploads, setUploads] = useState<DocRow[]>([
-    {
-      name: "SoA.xlsx",
-      type: "schedule-of-assessments",
-      status: "ready",
-      confidence: 0.86,
-      daysPending: Math.max(...MVP_MOCK.patients.map((p) => p.days)),
-      impactUsd: MVP_MOCK.kpis.atRisk,
-    },
-    {
-      name: "Budget.pdf",
-      type: "budget",
-      status: "processing",
-      confidence: 0.72,
-      daysPending: Math.max(...MVP_MOCK.patients.map((p) => p.days)),
-      impactUsd: MVP_MOCK.kpis.ready,
-    },
-  ])
+  const demo = getDocumentsDemo()
+  const [uploads, setUploads] = useState<DocRow[]>(
+    demo.value.map((d) => ({
+      name: d.file,
+      type: d.type,
+      status: d.status,
+      confidence: d.confidence,
+      daysPending: d.daysPending,
+      impactUsd: d.impactUsd,
+    })),
+  )
 
   const quickExtract = useMemo(() => {
     const byVisit = new Map<string, { visit: string; procedure: string; rate: number; days: number }>()
-    for (const p of MVP_MOCK.patients) {
-      const existing = byVisit.get(p.visit)
-      const procedure = p.event === "prescreen_completed" ? "Prescreen" : "Visit completed"
-      const rate = p.amount
-      if (!existing || p.days > existing.days) {
-        byVisit.set(p.visit, { visit: p.visit, procedure, rate, days: p.days })
+    // Demo extract: derive from seeded ingestion rows, sorted by delay.
+    for (const row of uploads) {
+      const existing = byVisit.get(row.type)
+      if (!existing || row.daysPending > existing.days) {
+        byVisit.set(row.type, { visit: row.type, procedure: "Extracted row", rate: row.impactUsd, days: row.daysPending })
       }
     }
     return [...byVisit.values()].sort((a, b) => b.days - a.days)
-  }, [])
+  }, [uploads])
 
   function onFilesSelected(files: FileList | null) {
     if (!files || files.length === 0) return
+    const maxDays = Math.max(0, ...uploads.map((u) => u.daysPending))
     const nowRows: DocRow[] = Array.from(files).map((f) => ({
       name: f.name,
       type: "uploaded",
       status: "processing",
       confidence: 0.75,
-      daysPending: Math.max(...MVP_MOCK.patients.map((p) => p.days)),
-      impactUsd: MVP_MOCK.kpis.atRisk,
+      daysPending: maxDays,
+      impactUsd: uploads[0]?.impactUsd ?? 0,
     }))
     setUploads((prev) => [...nowRows, ...prev].sort((a, b) => b.daysPending - a.daysPending))
   }
 
   return (
     <MvpShell title="Documents">
-      <StudyHeader study="STUDY-1" timeWindow="Last 30 days" />
+      <StudyHeader />
+      <div className="text-xs text-muted-foreground">
+        <span className="font-medium">Beta:</span> {demo.note}
+      </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-1">

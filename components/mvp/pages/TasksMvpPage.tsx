@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
-import { MVP_MOCK, formatUsd, statusFromDays } from "@/lib/mvp/mock"
+import { getTasksDemo } from "@/lib/mvp/backend"
+import { formatUsd, statusFromDays } from "@/lib/mvp/format"
 
 type TaskRow = {
   id: string
@@ -20,25 +21,26 @@ type TaskRow = {
 }
 
 export function TasksMvpPage() {
+  const demo = getTasksDemo()
   const rows = useMemo<TaskRow[]>(() => {
-    return MVP_MOCK.patients
-      .map((p) => {
-        const pr = statusFromDays(p.days)
-        return {
-          id: `TASK-${p.id}-${p.visit}`,
-          title: `Resolve billing delay: ${p.id} ${p.visit}`,
-          amount: p.amount,
-          daysPending: p.days,
-          priority: pr,
-          status: "open",
-        } as const
-      })
+    return demo.value
+      .map((t) => ({
+        id: `TASK-${t.title}`,
+        title: t.title,
+        amount: t.amount,
+        daysPending: t.daysPending,
+        priority: statusFromDays(t.daysPending),
+        status: t.status,
+      }))
       .sort((a, b) => b.daysPending - a.daysPending)
-  }, [])
+  }, [demo.value])
 
   return (
     <MvpShell title="Tasks">
-      <StudyHeader study="STUDY-1" timeWindow="Last 30 days" />
+      <StudyHeader />
+      <div className="text-xs text-muted-foreground">
+        <span className="font-medium">Beta:</span> {demo.note}
+      </div>
 
       <Card>
         <CardHeader className="pb-0">

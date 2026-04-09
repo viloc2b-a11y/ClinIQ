@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
-import { MVP_MOCK, formatUsd } from "@/lib/mvp/mock"
+import { getStudyBuildDemo } from "@/lib/mvp/backend"
+import { formatUsd } from "@/lib/mvp/format"
 
 type BuildRow = {
   area: string
@@ -18,20 +19,17 @@ type BuildRow = {
 }
 
 export function StudyBuildMvpPage() {
+  const demo = getStudyBuildDemo()
   const rows = useMemo<BuildRow[]>(() => {
-    const maxDays = Math.max(...MVP_MOCK.patients.map((p) => p.days))
-    const base: BuildRow[] = [
-      { area: "Document coverage", status: "needs-review", daysPending: maxDays, impactUsd: MVP_MOCK.kpis.atRisk },
-      { area: "Rate rules", status: "needs-review", daysPending: 12, impactUsd: MVP_MOCK.kpis.ready },
-      { area: "Event → billable mapping", status: "needs-review", daysPending: 35, impactUsd: MVP_MOCK.kpis.atRisk },
-      { area: "Published model", status: "ready", daysPending: 5, impactUsd: MVP_MOCK.kpis.ready },
-    ]
-    return base.sort((a, b) => b.daysPending - a.daysPending)
-  }, [])
+    return demo.value
+  }, [demo.value])
 
   return (
     <MvpShell title="Study Build">
-      <StudyHeader study="STUDY-1" timeWindow="Last 30 days" />
+      <StudyHeader />
+      <div className="text-xs text-muted-foreground">
+        <span className="font-medium">Beta:</span> {demo.note}
+      </div>
 
       <Card>
         <CardHeader className="pb-0">
