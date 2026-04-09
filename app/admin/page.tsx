@@ -26,9 +26,9 @@ export default async function AdminHomePage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Administration</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
             Signed in as <span className="font-mono text-foreground">{user.email}</span>. Invite teammates and review
-            deploy settings below.
+            deployment settings below.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -37,7 +37,7 @@ export default async function AdminHomePage() {
             href="/dashboard"
             className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
           >
-            Workbench
+            Open workbench
           </Link>
         </div>
       </div>
@@ -47,9 +47,11 @@ export default async function AdminHomePage() {
       <Card className="border-border/80">
         <CardHeader>
           <CardTitle className="text-base">Environment</CardTitle>
-          <CardDescription>Reference variables for your deployment. Do not share secret values outside secure channels.</CardDescription>
+          <CardDescription>
+            Reference variables for your deployment. Do not share secret values outside secure channels.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
+        <CardContent className="space-y-2 text-sm leading-relaxed text-muted-foreground">
           <p>
             <code className="rounded bg-muted px-1 text-xs">CLINIQ_ADMIN_EMAILS</code> — comma-separated
             emails allowed to access <code className="text-xs">/admin</code> and send invites.

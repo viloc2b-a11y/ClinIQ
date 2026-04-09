@@ -23,9 +23,23 @@ type DocRow = {
 }
 
 function statusBadge(status: DocStatus) {
-  if (status === "ready") return <Badge variant="secondary">ready</Badge>
-  if (status === "processing") return <Badge variant="outline">processing</Badge>
-  return <Badge variant="destructive">error</Badge>
+  if (status === "ready")
+    return (
+      <Badge variant="secondary" className="whitespace-nowrap font-medium">
+        Ready
+      </Badge>
+    )
+  if (status === "processing")
+    return (
+      <Badge variant="outline" className="whitespace-nowrap font-medium text-muted-foreground">
+        Processing
+      </Badge>
+    )
+  return (
+    <Badge variant="destructive" className="whitespace-nowrap font-medium">
+      Error
+    </Badge>
+  )
 }
 
 export function DocumentsMvpPage() {
@@ -43,11 +57,15 @@ export function DocumentsMvpPage() {
 
   const quickExtract = useMemo(() => {
     const byVisit = new Map<string, { visit: string; procedure: string; rate: number; days: number }>()
-    // Quick extract: derive from intake rows, sorted by delay.
     for (const row of uploads) {
       const existing = byVisit.get(row.type)
       if (!existing || row.daysPending > existing.days) {
-        byVisit.set(row.type, { visit: row.type, procedure: "Extracted row", rate: row.impactUsd, days: row.daysPending })
+        byVisit.set(row.type, {
+          visit: row.type,
+          procedure: "Extracted line item",
+          rate: row.impactUsd,
+          days: row.daysPending,
+        })
       }
     }
     return [...byVisit.values()].sort((a, b) => b.days - a.days)
@@ -99,65 +117,77 @@ export function DocumentsMvpPage() {
 
         <Card className="lg:col-span-2">
           <CardHeader className="pb-0">
-            <CardTitle>Ingestion List</CardTitle>
+            <CardTitle>Ingestion list</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>File</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Confidence</TableHead>
-                  <TableHead>Days Pending</TableHead>
-                  <TableHead>$ Impact</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {uploads
-                  .slice()
-                  .sort((a, b) => b.daysPending - a.daysPending)
-                  .map((d) => (
-                    <TableRow key={d.name}>
-                      <TableCell className="font-medium">{d.name}</TableCell>
-                      <TableCell>{d.type}</TableCell>
-                      <TableCell>{statusBadge(d.status)}</TableCell>
-                      <TableCell>{Math.round(d.confidence * 100)}%</TableCell>
-                      <TableCell className="font-semibold">{d.daysPending}</TableCell>
-                      <TableCell className="font-semibold">{formatUsd(d.impactUsd)}</TableCell>
-                    </TableRow>
-                  ))}
-              </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Confidence</TableHead>
+                    <TableHead className="text-right">Days pending</TableHead>
+                    <TableHead className="text-right">$ impact</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {uploads
+                    .slice()
+                    .sort((a, b) => b.daysPending - a.daysPending)
+                    .map((d) => (
+                      <TableRow key={d.name}>
+                        <TableCell className="min-w-[220px] font-medium">{d.name}</TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">{d.type}</TableCell>
+                        <TableCell>{statusBadge(d.status)}</TableCell>
+                        <TableCell className="whitespace-nowrap text-right tabular-nums">
+                          {Math.round(d.confidence * 100)}%
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                          {d.daysPending}d
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                          {formatUsd(d.impactUsd)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader className="pb-0">
-          <CardTitle>Quick Extract</CardTitle>
+          <CardTitle>Quick extract</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Visit</TableHead>
-                <TableHead>Procedure</TableHead>
-                <TableHead>Rate</TableHead>
-                <TableHead>Days Pending</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {quickExtract.map((row) => (
-                <TableRow key={row.visit}>
-                  <TableCell className="font-medium">{row.visit}</TableCell>
-                  <TableCell>{row.procedure}</TableCell>
-                  <TableCell>{formatUsd(row.rate)}</TableCell>
-                  <TableCell className="font-semibold">{row.days}</TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Visit</TableHead>
+                  <TableHead>Procedure</TableHead>
+                  <TableHead className="text-right">Rate</TableHead>
+                  <TableHead className="text-right">Days pending</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {quickExtract.map((row) => (
+                  <TableRow key={row.visit}>
+                    <TableCell className="whitespace-nowrap font-medium">{row.visit}</TableCell>
+                    <TableCell className="min-w-[220px] whitespace-normal text-muted-foreground">{row.procedure}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                      {formatUsd(row.rate)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">{row.days}d</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </MvpShell>

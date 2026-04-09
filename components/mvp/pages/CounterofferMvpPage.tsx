@@ -164,6 +164,9 @@ export function CounterofferMvpPage() {
                 <div className="text-2xl font-semibold tracking-tight tabular-nums text-destructive">
                   {formatUsd(data.gap)}
                 </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Accepting current terms leaves ~{formatUsd(data.gap)} in unrealized site revenue.
+                </p>
               </CardContent>
             </Card>
           </div>

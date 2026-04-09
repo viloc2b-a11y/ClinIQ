@@ -18,6 +18,10 @@ type BuildRow = {
   impactUsd: number
 }
 
+function buildStatusLabel(status: BuildRow["status"]) {
+  return status === "needs-review" ? "Needs review" : "Ready"
+}
+
 export function StudyBuildMvpPage() {
   const demo = getStudyBuildDemo()
   const rows = useMemo<BuildRow[]>(() => {
@@ -42,28 +46,35 @@ export function StudyBuildMvpPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Area</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Days Pending</TableHead>
-                <TableHead>$ Impact</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((r) => (
-                <TableRow key={r.area}>
-                  <TableCell className="font-medium">{r.area}</TableCell>
-                  <TableCell>
-                    <Badge variant={r.status === "ready" ? "secondary" : "outline"}>{r.status}</Badge>
-                  </TableCell>
-                  <TableCell className="font-semibold">{r.daysPending}</TableCell>
-                  <TableCell className="font-semibold">{formatUsd(r.impactUsd)}</TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Area</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Days pending</TableHead>
+                  <TableHead className="text-right">$ impact</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.area}>
+                    <TableCell className="min-w-[240px] font-medium">{r.area}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={r.status === "ready" ? "secondary" : "outline"}
+                        className="whitespace-nowrap font-medium"
+                      >
+                        {buildStatusLabel(r.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">{r.daysPending}d</TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">{formatUsd(r.impactUsd)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </MvpShell>

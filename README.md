@@ -2,6 +2,13 @@
 
 Internal clinical operations and revenue-intelligence shell: deterministic core engines in TypeScript plus a Next.js app. Kept separate from legacy marketing or VRG site code.
 
+## ClinIQ Financial (demo)
+
+This repo includes the **ClinIQ Financial** demo workbench: an executive-first set of pages that frame recoverable revenue, aging pressure, and negotiation margin risk for an **active study**.
+
+- **Primary demo flow**: `Dashboard → Billables → Leakage → Counteroffer → Analytics`
+- **Secondary pages (still demo-ready)**: `Documents`, `Study Build`, `Tasks`, `Admin`
+
 ## Monorepo layout
 
 | Part | Path | Role |
@@ -38,6 +45,25 @@ Run commands from `backend/` so uploads resolve to `backend/uploads/` and `load_
 ## Stack
 
 Next.js (App Router), TypeScript, Tailwind CSS v4, shadcn/ui, Supabase (`@supabase/ssr` + `@supabase/supabase-js`). Core business logic lives under `lib/cliniq-core/` (framework-agnostic, Vitest-tested).
+
+## Run the Financial demo locally
+
+From the repo root:
+
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+Then open:
+
+- `http://localhost:3000/dashboard`
+
+Notes:
+
+- The Financial pages support demo operation without requiring you to change routes or data structures.
+- Supabase-backed areas (for example `/admin`) require valid Supabase keys in `.env.local`.
 
 ## Fresh machine (replicate from GitHub)
 
@@ -215,3 +241,18 @@ npm run build && npm start
 ```
 
 Run commands from this directory so `turbopack.root` matches this app.
+
+## Deploy to Vercel
+
+Recommended (GitHub integration):
+
+- Import the GitHub repo into Vercel.
+- Set required environment variables in Vercel Project Settings (from `.env.example` / your `.env.local`).
+- Deploy the default production branch.
+
+CLI option (requires auth on this machine):
+
+```bash
+npx vercel
+npx vercel --prod
+```

@@ -20,6 +20,16 @@ type TaskRow = {
   status: "open" | "in-progress" | "done"
 }
 
+function urgencyLabel(priority: TaskRow["priority"]) {
+  return priority === "critical" ? "Critical" : "Delayed"
+}
+
+function taskStatusLabel(status: TaskRow["status"]) {
+  if (status === "in-progress") return "In progress"
+  if (status === "done") return "Done"
+  return "Open"
+}
+
 export function TasksMvpPage() {
   const demo = getTasksDemo()
   const rows = useMemo<TaskRow[]>(() => {
@@ -47,7 +57,7 @@ export function TasksMvpPage() {
         <CardHeader className="pb-0">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle>Recovery actions</CardTitle>
+              <CardTitle>Revenue recovery actions</CardTitle>
               <p className="mt-1 text-xs text-muted-foreground">Each row ties to dollars still exposed on the study.</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -61,41 +71,43 @@ export function TasksMvpPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Action</TableHead>
-                <TableHead>Revenue at risk</TableHead>
-                <TableHead>Aging</TableHead>
-                <TableHead>Urgency</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-medium">{t.title}</TableCell>
-                  <TableCell className="font-semibold">{formatUsd(t.amount)}</TableCell>
-                  <TableCell className="font-semibold">{t.daysPending} days</TableCell>
-                  <TableCell>
-                    <span className="inline-flex flex-wrap items-center gap-1">
-                      <Badge variant={t.priority === "critical" ? "destructive" : "secondary"} className="capitalize">
-                        {t.priority}
-                      </Badge>
-                      {t.priority === "critical" ? (
-                        <Badge variant="outline" className="text-[10px] font-normal text-destructive">
-                          Recover now
-                        </Badge>
-                      ) : null}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{t.status}</Badge>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead className="text-right">Revenue at risk</TableHead>
+                  <TableHead className="text-right">Aging</TableHead>
+                  <TableHead>Urgency</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map((t) => (
+                  <TableRow key={t.id}>
+                    <TableCell className="min-w-[260px] font-medium">{t.title}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                      {formatUsd(t.amount)}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">{t.daysPending}d</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={t.priority === "critical" ? "destructive" : "secondary"}
+                        className="whitespace-nowrap font-medium"
+                      >
+                        {urgencyLabel(t.priority)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="whitespace-nowrap font-medium text-muted-foreground">
+                        {taskStatusLabel(t.status)}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </MvpShell>

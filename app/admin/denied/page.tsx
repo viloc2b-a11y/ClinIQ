@@ -26,7 +26,7 @@ export default function AdminDeniedPage() {
             href="/"
             className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
           >
-            Home
+            Back to home
           </Link>
         </CardContent>
       </Card>

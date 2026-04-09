@@ -58,22 +58,15 @@ export function DashboardMvpPage() {
     const { atRisk, delayed, critical } = kpis
 
     if (atRisk <= 0) {
-      return <>No revenue at risk is displayed for this study in the current window.</>
+      return <>No at-risk revenue surfaced for this study in the current billing window.</>
     }
-
-    let concentration = ""
-    if (delayed > 0 || critical > 0) {
-      concentration = ` Most exposure shows up as delayed billables (${delayed} delayed, ${critical} critical) and unresolved execution leakage — use the table below to prioritize.`
-    } else if (leakageRows.length > 0) {
-      concentration = " Work the highest-dollar leakage rows first to protect expected revenue."
-    } else {
-      concentration = " Open Billables and Leakage to surface aging and close the execution gap."
-    }
+    void delayed
+    void critical
 
     return (
       <>
-        <span className="font-semibold text-foreground">{formatUsd(atRisk)}</span> is currently at risk across this
-        study.{concentration}
+        <span className="font-semibold text-foreground">{formatUsd(atRisk)}</span> at risk across current execution
+        signals — recoverable within the current billing window if actioned now.
       </>
     )
   }, [kpis, leakageRows])
