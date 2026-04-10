@@ -25,6 +25,7 @@ export function DashboardMvpPage() {
   })
   const [leakageRows, setLeakageRows] = useState<TopLeakageRow[]>([])
   const [sourceNote, setSourceNote] = useState<string | null>(null)
+  const [sourceError, setSourceError] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -37,10 +38,16 @@ export function DashboardMvpPage() {
       setKpis(summaryRes.value)
       setLeakageRows(leakageRes.value.slice(0, 20))
 
-      if (summaryRes.source === "live" || leakageRes.source === "live") {
+      if (summaryRes.source === "error" || leakageRes.source === "error") {
+        setSourceError(summaryRes.error ?? leakageRes.error ?? "Could not load dashboard data.")
         setSourceNote(null)
       } else {
-        setSourceNote(summaryRes.note ?? leakageRes.note ?? "Coordinated demo data — connect execution to go live.")
+        setSourceError(null)
+        if (summaryRes.source === "live" || leakageRes.source === "live") {
+          setSourceNote(null)
+        } else {
+          setSourceNote(summaryRes.note ?? leakageRes.note ?? "Coordinated demo data — connect execution to go live.")
+        }
       }
       setLoading(false)
     }
@@ -61,6 +68,11 @@ export function DashboardMvpPage() {
       ) : (
         <>
           <StudyHeader />
+          {sourceError ? (
+            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {sourceError}
+            </p>
+          ) : null}
           {sourceNote ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
               {sourceNote}

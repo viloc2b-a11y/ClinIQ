@@ -1,5 +1,6 @@
 import { ensureUserPrimarySite } from "@/lib/import/ensure-user-primary-site"
 import { computeNegotiationFinancialSummary, stableNegotiationLineKey } from "@/lib/negotiation/financial"
+import { buildSponsorArgumentBundle } from "@/lib/negotiation/sponsor-arguments"
 import { createServerSupabaseClient } from "@/supabase/server"
 import { NextResponse } from "next/server"
 
@@ -77,7 +78,22 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, items: rows ?? [], deal: dealMeta ?? null })
+  const itemsWithArgs = (rows ?? []).map((row) => {
+    const r = row as Record<string, unknown>
+    const sponsor_arguments = buildSponsorArgumentBundle({
+      label: String(r.label ?? ""),
+      line_code: String(r.line_code ?? ""),
+      category: String(r.category ?? ""),
+      visit_name: String(r.visit_name ?? ""),
+      current_price: Number(r.current_price ?? 0) || 0,
+      internal_cost: Number(r.internal_cost ?? 0) || 0,
+      proposed_price: Number(r.proposed_price ?? 0) || 0,
+      justification: String(r.justification ?? ""),
+    })
+    return { ...r, sponsor_arguments }
+  })
+
+  return NextResponse.json({ ok: true, items: itemsWithArgs, deal: dealMeta ?? null })
 }
 
 /**

@@ -20,6 +20,7 @@ export function BillablesMvpPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>("all")
   const [source, setSource] = useState<DataSource>("fallback")
+  const [sourceError, setSourceError] = useState<string | null>(null)
   const [rows, setRows] = useState<BillablesRow[]>(
     [],
   )
@@ -31,6 +32,7 @@ export function BillablesMvpPage() {
       const res = await getBillablesRows(studyKey)
       if (cancelled) return
       setSource(res.source)
+      setSourceError(res.source === "error" ? res.error ?? "Could not load billables." : null)
       setRows(res.value)
       setLoading(false)
     }
@@ -60,6 +62,9 @@ export function BillablesMvpPage() {
       ) : (
         <>
           <StudyHeader />
+          {sourceError ? (
+            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">{sourceError}</p>
+          ) : null}
           {source === "fallback" ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
               Showing coordinated demo pending billables — live rows mirror execution leakage when connected.

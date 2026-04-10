@@ -11,10 +11,12 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url)
   const studyId = searchParams.get("study_id")?.trim()
+  const studyKey = searchParams.get("study_key")?.trim()
   const limit = Math.min(Number(searchParams.get("limit") ?? "200") || 200, 500)
 
   let q = supabase.from("expected_billables").select("*").order("visit_name").limit(limit)
   if (studyId) q = q.eq("study_id", studyId)
+  if (studyKey) q = q.eq("study_key", studyKey)
 
   const { data, error } = await q
   if (error) {

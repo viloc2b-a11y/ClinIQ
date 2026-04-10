@@ -1,7 +1,7 @@
 "use client"
 
 import { useDemoContext } from "@/components/demo/DemoContext"
-import { useEffect, useMemo, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,6 +23,7 @@ export function CounterofferMvpPage() {
   const [loading, setLoading] = useState(true)
   const [source, setSource] = useState<DataSource>("fallback")
   const [note, setNote] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [data, setData] = useState<CounterofferData>({
     sponsorOffer: 180_000,
     internalTarget: 240_000,
@@ -37,6 +38,7 @@ export function CounterofferMvpPage() {
       const res = await getCounterofferData({ dealId, studyKey })
       if (cancelled) return
       setSource(res.source)
+      setLoadError(res.source === "error" ? res.error ?? "Could not load negotiation data." : null)
       setNote(res.source === "fallback" ? res.note ?? null : null)
       setData(res.value)
       setLoading(false)
@@ -63,7 +65,11 @@ export function CounterofferMvpPage() {
           <div className="flex flex-col gap-2">
             <StudyHeader />
             <div className="flex flex-wrap justify-end gap-2">
-              {source === "fallback" ? (
+              {source === "error" ? (
+                <Badge variant="destructive" className="font-normal">
+                  Error
+                </Badge>
+              ) : source === "fallback" ? (
                 <Badge variant="outline" className="font-normal text-muted-foreground">
                   Demo scenario
                 </Badge>
@@ -74,6 +80,10 @@ export function CounterofferMvpPage() {
               )}
             </div>
           </div>
+
+          {loadError ? (
+            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">{loadError}</p>
+          ) : null}
 
           {note ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">{note}</p>
@@ -164,14 +174,30 @@ export function CounterofferMvpPage() {
                   </TableHeader>
                   <TableBody>
                     {rows.map((r, i) => (
-                      <TableRow key={`${r.fee}-${i}`}>
-                        <TableCell className="font-medium">{r.fee}</TableCell>
-                        <TableCell>{formatUsd(r.sponsor)}</TableCell>
-                        <TableCell className="font-semibold">{formatUsd(r.proposed)}</TableCell>
-                        <TableCell className="font-semibold">{formatUsd(r.delta)}</TableCell>
-                        <TableCell>{priorityBadge(r.priority)}</TableCell>
-                        <TableCell className="max-w-[420px] whitespace-normal text-muted-foreground">{r.justification}</TableCell>
-                      </TableRow>
+                      <Fragment key={`${r.fee}-${i}`}>
+                        <TableRow>
+                          <TableCell className="font-medium">{r.fee}</TableCell>
+                          <TableCell>{formatUsd(r.sponsor)}</TableCell>
+                          <TableCell className="font-semibold">{formatUsd(r.proposed)}</TableCell>
+                          <TableCell className="font-semibold">{formatUsd(r.delta)}</TableCell>
+                          <TableCell>{priorityBadge(r.priority)}</TableCell>
+                          <TableCell className="max-w-[420px] whitespace-normal text-muted-foreground">{r.justification}</TableCell>
+                        </TableRow>
+                        {r.sponsor_arguments ? (
+                          <TableRow className="bg-muted/25 hover:bg-muted/25">
+                            <TableCell colSpan={6} className="py-3 text-xs leading-relaxed text-muted-foreground">
+                              <p className="font-medium text-foreground">
+                                Sponsor argument ·{" "}
+                                <span className="text-primary">{r.sponsor_arguments.issue_type.replace(/_/g, " ")}</span>
+                              </p>
+                              <p className="mt-1">{r.sponsor_arguments.sponsor_language}</p>
+                              <p className="mt-2 text-[11px] text-muted-foreground/90">
+                                <span className="font-medium">Impact:</span> {r.sponsor_arguments.impact_summary}
+                              </p>
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                      </Fragment>
                     ))}
                   </TableBody>
                 </Table>
