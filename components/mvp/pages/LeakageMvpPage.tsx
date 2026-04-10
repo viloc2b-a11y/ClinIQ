@@ -33,6 +33,7 @@ export function LeakageMvpPage() {
   })
   const [rows, setRows] = useState<LeakageRow[]>([])
   const [sourceNote, setSourceNote] = useState<string | null>("Demo data")
+  const [sourceError, setSourceError] = useState<string | null>(null)
 
   const derived = useMemo(() => rows.sort((a, b) => b.daysPending - a.daysPending), [rows])
 
@@ -54,8 +55,14 @@ export function LeakageMvpPage() {
       }))
       setRows(mapped)
 
-      if (summaryRes.source === "live" || leakageRes.source === "live") setSourceNote(null)
-      else setSourceNote(summaryRes.note ?? leakageRes.note ?? "Coordinated demo leakage — connect execution for live rows.")
+      if (summaryRes.source === "error" || leakageRes.source === "error") {
+        setSourceError(summaryRes.error ?? leakageRes.error ?? "Could not load leakage data.")
+        setSourceNote(null)
+      } else {
+        setSourceError(null)
+        if (summaryRes.source === "live" || leakageRes.source === "live") setSourceNote(null)
+        else setSourceNote(summaryRes.note ?? leakageRes.note ?? "Coordinated demo leakage — connect execution for live rows.")
+      }
       setLoading(false)
     }
     void load()
@@ -74,6 +81,9 @@ export function LeakageMvpPage() {
       ) : (
         <>
           <StudyHeader />
+          {sourceError ? (
+            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">{sourceError}</p>
+          ) : null}
           {sourceNote ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">{sourceNote}</p>
           ) : null}

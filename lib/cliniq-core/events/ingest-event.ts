@@ -28,6 +28,8 @@ export interface IngestEventInput {
   visitName: string
   eventType: string
   eventDate: string
+  /** Execution site (UUID); stored on event_log when provided */
+  siteId?: string
 }
 
 const DEFAULT_SPONSOR_ID = "SP-DEFAULT"
@@ -63,42 +65,6 @@ function emptyInvoicePackage(event: IngestEventInput, sponsorId: string): Invoic
 }
 
 /**
- * Persists expected_billables rows linked to the ingested event.
- * Non-fatal: failures warn but do not throw or block the ingest response.
- */
-async function persistExpectedBillables(
-  supabase: SupabaseClient,
-  params: {
-    eventLogId: string
-    studyId: string
-    subjectId: string
-    expectedBillables: ExpectedBillable[]
-  },
-): Promise<void> {
-  const { eventLogId, studyId, subjectId, expectedBillables } = params
-  if (expectedBillables.length === 0) return
-
-  const rows = expectedBillables.map((eb) => ({
-    event_log_id: eventLogId,
-    study_id: studyId,
-    subject_id: subjectId,
-    line_code: eb.lineCode,
-    visit_name: eb.visitName,
-    expected_revenue: eb.expectedRevenue,
-    label: eb.label,
-    status: "pending",
-  }))
-
-  const { error } = await supabase.from("expected_billables").insert(rows)
-  if (error) {
-    console.warn(
-      "[ingestEvent] expected_billables persist warning:",
-      error.message,
-    )
-  }
-}
-
-/**
  * Event/visit ingestion: persists `event_log`, runs billables → ledger → claims → invoice → leakage.
  *
  * Contract (v1):
@@ -114,29 +80,23 @@ export async function ingestEvent(params: {
   const { supabase, event, expectedBillables } = params
   const sponsorId = params.sponsorId ?? DEFAULT_SPONSOR_ID
 
-  const { data: inserted, error } = await supabase
-    .from("event_log")
-    .insert({
-      study_id: event.studyId,
-      subject_id: event.subjectId,
-      visit_name: event.visitName,
-      event_type: event.eventType,
-      event_date: event.eventDate,
-    })
-    .select()
-    .single()
+  const insertPayload: Record<string, unknown> = {
+    study_id: event.studyId,
+    study_key: event.studyId,
+    subject_id: event.subjectId,
+    visit_name: event.visitName,
+    event_type: event.eventType,
+    event_date: event.eventDate,
+  }
+  if (event.siteId?.trim()) {
+    insertPayload.site_id = event.siteId.trim()
+  }
+
+  const { data: inserted, error } = await supabase.from("event_log").insert(insertPayload).select().single()
 
   if (error) {
     throw new Error("Failed to insert event_log: " + error.message)
   }
-
-  // Persist expected_billables linked to this event (non-fatal)
-  await persistExpectedBillables(supabase, {
-    eventLogId: inserted.id as string,
-    studyId: event.studyId,
-    subjectId: event.subjectId,
-    expectedBillables,
-  })
 
   const lineCode = resolveLineCodeForIngest(event, expectedBillables)
 

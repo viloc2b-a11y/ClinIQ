@@ -34,6 +34,7 @@ describe("POST /api/ingest-event", () => {
   beforeEach(() => {
     vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://localhost:54321")
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "test-service-role-key")
+    vi.stubEnv("CLINIQ_INGEST_ALLOW_BODY_EXPECTED_BILLABLES", "1")
     ingestEventMock.mockReset()
   })
 
@@ -132,6 +133,31 @@ describe("POST /api/ingest-event", () => {
     const json = (await res.json()) as Record<string, unknown>
     expect(json.ok).toBe(false)
     expect(String(json.error)).toContain("Failed to insert event_log")
+  })
+
+  it("returns 400 without siteId when body expected billables are disallowed", async () => {
+    vi.stubEnv("NODE_ENV", "production")
+    vi.stubEnv("CLINIQ_INGEST_ALLOW_BODY_EXPECTED_BILLABLES", "0")
+
+    const res = await POST(
+      new Request("http://localhost/api/ingest-event", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          event: {
+            studyId: "S-1",
+            subjectId: "SUB-001",
+            visitName: "Visit 1",
+            eventType: "visit_completed",
+            eventDate: "2026-04-04T10:00:00.000Z",
+          },
+        }),
+      }),
+    )
+
+    expect(res.status).toBe(400)
+    const json = (await res.json()) as Record<string, unknown>
+    expect(String(json.error)).toContain("siteId")
   })
 
   it("omits actionCenterSync key in JSON when ingest returns undefined (non-visit path)", async () => {

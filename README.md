@@ -169,7 +169,10 @@ Public entry: `import { … } from "@/lib/cliniq-core/ar"` (or relative path to 
 |-------|------|
 | `GET /api/action-center` | Bootstrap memory Action Center (if needed), return items + summary from persistence |
 | `POST /api/action-center/mutate` | Apply row actions against persisted items |
-| `POST /api/ingest-event` | Body: `event` + `expectedBillables` → `ingestEvent`; response includes optional **`actionCenterSync`**. If `CLINIQ_API_SECRET` is set in the environment, requests must send `Authorization: Bearer <secret>`. |
+| `POST /api/study/publish` | Authenticated: writes **`expected_billables`** baseline from `cliniq_budget_draft_versions`, **`negotiation_items`** (with `expectedVersion`), or **`final_agreements`**. Replaces prior publish for `(site_id, study_key)` where `event_log_id` is null (idempotent). |
+| `GET /api/negotiation/deals` | Authenticated: open **`negotiation_deals`** for site + `studyKey` (replaces demo-only lists when signed in). |
+| `GET /api/negotiation/items` | Returns line items plus computed **`sponsor_arguments`** (issue type, sponsor-ready language) per row. |
+| `POST /api/ingest-event` | **Production:** body `{ event, siteId }` — loads published **`expected_billables`** from DB (`siteId` + `study_key` = `event.studyId`). Optional **`CLINIQ_INGEST_ALLOW_BODY_EXPECTED_BILLABLES=1`** restores body `expectedBillables` for tests/tools. Response may include **`actionCenterSync`**. If `CLINIQ_API_SECRET` is set, send `Authorization: Bearer <secret>`. |
 | `POST /api/admin/invite` | JSON `{ "email": "…" }` — Supabase `inviteUserByEmail` (service role). Session user must be on `CLINIQ_ADMIN_EMAILS`. |
 | `GET /api/execution/*` | Execution data helpers (e.g. `run`, `expected-billables`, `event-log`, `summary`) — require server Supabase URL + service role where applicable |
 
@@ -215,3 +218,9 @@ npm run build && npm start
 ```
 
 Run commands from this directory so `turbopack.root` matches this app.
+
+## Deploy (Vercel)
+
+Connect the GitHub repo in the [Vercel dashboard](https://vercel.com/new); set the same env vars as `.env.example` (`NEXT_PUBLIC_SUPABASE_*`, `SUPABASE_SERVICE_ROLE_KEY`, optional `CLINIQ_API_SECRET`, `NEXT_PUBLIC_CLINIQ_MVP_STRICT` for production dashboards).
+
+After deploy, your **production URL** is shown on the project overview (e.g. `https://<project>.vercel.app`). Apply Supabase migrations in your linked database before using **Publish** and **ingest-event** in production.

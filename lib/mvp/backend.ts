@@ -1,16 +1,26 @@
 import { MVP_MOCK, type MvpKpis } from "@/lib/mvp/mock"
 import type { TopLeakageRow } from "@/components/mvp/TopLeakageTable"
 import { formatUsd } from "@/lib/mvp/format"
+import type { SponsorArgumentBundle } from "@/lib/negotiation/sponsor-arguments"
 
 export type ApiOk<T> = { ok: true; data: T }
 export type ApiErr = { ok: false; error?: string }
 
-export type DataSource = "live" | "fallback"
+export type DataSource = "live" | "fallback" | "error"
 
 export type MvpResult<T> = {
   source: DataSource
   value: T
   note?: string
+  /** Set when source === "error" */
+  error?: string
+}
+
+const ZERO_KPIS: MvpKpis = { ready: 0, atRisk: 0, delayed: 0, critical: 0 }
+
+/** When true, MVP pages must not substitute mock data on API failure. */
+export function isMvpStrict(): boolean {
+  return process.env.NEXT_PUBLIC_CLINIQ_MVP_STRICT === "1"
 }
 
 async function safeJson<T>(res: Response): Promise<T | null> {
@@ -51,27 +61,36 @@ function mockLeakageRows(): TopLeakageRow[] {
 }
 
 export async function getExecutionSummary(studyKey: string): Promise<MvpResult<MvpKpis>> {
+  const strict = isMvpStrict()
   const fallback: MvpResult<MvpKpis> = { source: "fallback", value: MVP_MOCK.kpis, note: "Demo data" }
-  if (!studyKey.trim()) return fallback
+  if (!studyKey.trim()) {
+    return strict
+      ? { source: "error", value: ZERO_KPIS, error: "Missing study key" }
+      : fallback
+  }
 
   const res = await fetchApiOk<{
     study_key: string | null
-    totals: { expected_revenue: number; revenue_gap: number }
+    totals: { expected_revenue: number; revenue_gap: number } | null
     counts?: unknown
     headline?: unknown
     samples?: unknown
   }>(`/api/execution/summary?study_key=${encodeURIComponent(studyKey)}`)
 
-  if (!res.ok) return fallback
+  if (!res.ok) {
+    return strict
+      ? { source: "error", value: ZERO_KPIS, error: res.error ?? "Execution summary unavailable" }
+      : fallback
+  }
 
-  const ready = Number(res.data.totals?.expected_revenue ?? MVP_MOCK.kpis.ready)
-  const atRisk = Math.max(0, Number(res.data.totals?.revenue_gap ?? MVP_MOCK.kpis.atRisk))
+  const ready = Number(res.data.totals?.expected_revenue ?? 0)
+  const atRisk = Math.max(0, Number(res.data.totals?.revenue_gap ?? 0))
 
   return {
     source: "live",
     value: {
-      ready: Number.isFinite(ready) ? ready : MVP_MOCK.kpis.ready,
-      atRisk: Number.isFinite(atRisk) ? atRisk : MVP_MOCK.kpis.atRisk,
+      ready: Number.isFinite(ready) ? ready : 0,
+      atRisk: Number.isFinite(atRisk) ? atRisk : 0,
       delayed: MVP_MOCK.kpis.delayed,
       critical: MVP_MOCK.kpis.critical,
     },
@@ -79,12 +98,22 @@ export async function getExecutionSummary(studyKey: string): Promise<MvpResult<M
 }
 
 export async function getLeakageRows(studyKey: string): Promise<MvpResult<TopLeakageRow[]>> {
+  const strict = isMvpStrict()
   const fallback: MvpResult<TopLeakageRow[]> = { source: "fallback", value: mockLeakageRows(), note: "Demo data" }
-  if (!studyKey.trim()) return fallback
+  if (!studyKey.trim()) {
+    return strict ? { source: "error", value: [], error: "Missing study key" } : fallback
+  }
 
   const res = await fetchApiOk<any[]>(`/api/execution/leakage?study_id=${encodeURIComponent(studyKey)}&limit=200`)
-  if (!res.ok) return fallback
-  if (!Array.isArray(res.data) || res.data.length === 0) return fallback
+  if (!res.ok) {
+    return strict ? { source: "error", value: [], error: res.error ?? "Leakage API unavailable" } : fallback
+  }
+  if (!Array.isArray(res.data)) {
+    return strict ? { source: "error", value: [], error: "Invalid leakage response" } : fallback
+  }
+  if (res.data.length === 0) {
+    return strict ? { source: "live", value: [] } : fallback
+  }
 
   const mapped: TopLeakageRow[] = res.data.map((r) => ({
     patient: String(r.subject_id ?? "—"),
@@ -106,8 +135,7 @@ export type BillablesRow = {
 }
 
 export async function getBillablesRows(studyKey: string): Promise<MvpResult<BillablesRow[]>> {
-  // For now, we treat leakage items as the most defensible "billables at risk" dataset.
-  // It is produced by execution/leakage backend logic and is traceable to missing_amount.
+  const strict = isMvpStrict()
   const fallback: MvpResult<BillablesRow[]> = {
     source: "fallback",
     note: "Demo data",
@@ -120,11 +148,20 @@ export async function getBillablesRows(studyKey: string): Promise<MvpResult<Bill
       daysPending: p.days,
     })),
   }
-  if (!studyKey.trim()) return fallback
+  if (!studyKey.trim()) {
+    return strict ? { source: "error", value: [], error: "Missing study key" } : fallback
+  }
 
   const res = await fetchApiOk<any[]>(`/api/execution/leakage?study_id=${encodeURIComponent(studyKey)}&limit=500`)
-  if (!res.ok) return fallback
-  if (!Array.isArray(res.data) || res.data.length === 0) return fallback
+  if (!res.ok) {
+    return strict ? { source: "error", value: [], error: res.error ?? "Billables/leakage API unavailable" } : fallback
+  }
+  if (!Array.isArray(res.data)) {
+    return strict ? { source: "error", value: [], error: "Invalid billables response" } : fallback
+  }
+  if (res.data.length === 0) {
+    return strict ? { source: "live", value: [] } : fallback
+  }
 
   const rows: BillablesRow[] = res.data.map((r) => ({
     patient: String(r.subject_id ?? "—"),
@@ -169,8 +206,21 @@ export async function getAnalyticsSnapshot(studyKey: string): Promise<AnalyticsS
     { metric: "Critical items", value: String(criticalCount), impactUsd: kpisRes.value.atRisk, daysPending: 35 },
   ].sort((a, b) => b.daysPending - a.daysPending)
 
-  const source: DataSource = kpisRes.source === "live" || leakageRes.source === "live" ? "live" : "fallback"
-  return { kpis: kpisRes.value, metrics, source, note: source === "fallback" ? "Demo data" : undefined }
+  let source: DataSource = "fallback"
+  if (kpisRes.source === "error" || leakageRes.source === "error") source = "error"
+  else if (kpisRes.source === "live" || leakageRes.source === "live") source = "live"
+
+  return {
+    kpis: kpisRes.value,
+    metrics,
+    source,
+    note:
+      source === "error"
+        ? kpisRes.error ?? leakageRes.error ?? "Data error"
+        : source === "fallback"
+          ? "Demo data"
+          : undefined,
+  }
 }
 
 export type CounterofferLine = {
@@ -181,6 +231,7 @@ export type CounterofferLine = {
   priority: "must-win" | "tradeoff"
   justification: string
   daysPending: number
+  sponsor_arguments?: SponsorArgumentBundle
 }
 
 export type CounterofferData = {
@@ -197,8 +248,38 @@ export type NegotiationDealOption = {
 }
 
 export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpResult<NegotiationDealOption[]>> {
+  const strict = isMvpStrict()
   const empty: MvpResult<NegotiationDealOption[]> = { source: "fallback", value: [] }
-  if (!studyKey.trim()) return empty
+  if (!studyKey.trim()) {
+    return strict ? { source: "error", value: [], error: "Missing study key" } : empty
+  }
+
+  const authRes = await fetch(`/api/negotiation/deals?studyKey=${encodeURIComponent(studyKey)}`, {
+    cache: "no-store",
+    credentials: "same-origin",
+  })
+  const authJson = await safeJson<{ ok?: boolean; deals?: unknown; error?: string }>(authRes)
+  if (authRes.ok && authJson?.ok === true && Array.isArray(authJson.deals)) {
+    const mapped: NegotiationDealOption[] = (authJson.deals as Record<string, unknown>[]).map((d) => {
+      const deal_id = String(d.deal_id ?? "")
+      const sk = String(d.study_key ?? studyKey)
+      const name = typeof d.study_name === "string" && d.study_name.trim() ? d.study_name.trim() : ""
+      const label = name || `${sk} · ${deal_id.slice(0, 8)}…`
+      return { deal_id, study_key: sk, label }
+    })
+    if (mapped.length > 0) {
+      return { source: "live", value: mapped }
+    }
+    if (strict) {
+      return { source: "live", value: [], note: "No open deals for this study" }
+    }
+  } else if (strict) {
+    return {
+      source: "error",
+      value: [],
+      error: authJson?.error ?? (authRes.status === 401 ? "Sign in to load negotiation deals" : "Deals list unavailable"),
+    }
+  }
 
   const res = await fetch(`/api/demo/negotiation-deals?study_key=${encodeURIComponent(studyKey)}`, { cache: "no-store" })
   const json = await safeJson<{ ok?: unknown; data?: unknown }>(res)
@@ -206,7 +287,7 @@ export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpR
     return { ...empty, note: "Deals list unavailable" }
   }
 
-  const mapped: NegotiationDealOption[] = (json.data as any[]).map((d) => {
+  const mappedDemo: NegotiationDealOption[] = (json.data as Record<string, unknown>[]).map((d) => {
     const deal_id = String(d.deal_id ?? "")
     const sk = String(d.study_key ?? studyKey)
     const name = typeof d.study_name === "string" && d.study_name.trim() ? d.study_name.trim() : ""
@@ -214,8 +295,8 @@ export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpR
     return { deal_id, study_key: sk, label }
   })
 
-  return mapped.length
-    ? { source: "live", value: mapped }
+  return mappedDemo.length
+    ? { source: "live", value: mappedDemo }
     : { source: "fallback", value: [], note: "No open deals for this study" }
 }
 
@@ -235,7 +316,28 @@ function counterofferFallbackLines(): CounterofferLine[] {
   }))
 }
 
+function mapItemsToCounterofferLines(items: Record<string, unknown>[], maxDays: number): CounterofferLine[] {
+  return items.map((it) => {
+    const fee = String(it.label ?? it.line_code ?? it.source_line_id ?? "Line")
+    const sponsor = Number(it.current_price ?? 0) || 0
+    const proposed = Number(it.proposed_price ?? 0) || Number(it.internal_cost ?? 0) || 0
+    const priority: CounterofferLine["priority"] = proposed - sponsor > 0 ? "must-win" : "tradeoff"
+    const sa = it.sponsor_arguments as SponsorArgumentBundle | undefined
+    return {
+      fee,
+      sponsor,
+      proposed,
+      delta: proposed - sponsor,
+      priority,
+      justification: String(it.justification ?? "").trim() || "—",
+      daysPending: maxDays,
+      ...(sa && typeof sa === "object" ? { sponsor_arguments: sa } : {}),
+    }
+  })
+}
+
 export async function getCounterofferData(args: { dealId?: string; studyKey: string }): Promise<MvpResult<CounterofferData>> {
+  const strict = isMvpStrict()
   const fallbackBase: CounterofferData = {
     sponsorOffer: 180_000,
     internalTarget: 240_000,
@@ -254,7 +356,48 @@ export async function getCounterofferData(args: { dealId?: string; studyKey: str
     value: { ...fallbackBase, lines: counterofferFallbackLines().map((l) => ({ ...l, daysPending: maxDays || l.daysPending })) },
   }
 
-  if (!dealId) return fallbackNoDeal
+  if (!dealId) {
+    return strict
+      ? { source: "error", value: { ...fallbackBase, lines: [] }, error: "Select a deal to load negotiation lines" }
+      : fallbackNoDeal
+  }
+
+  const authRes = await fetch(`/api/negotiation/items?dealId=${encodeURIComponent(dealId)}`, {
+    cache: "no-store",
+    credentials: "same-origin",
+  })
+  const authJson = await safeJson<{ ok?: boolean; items?: unknown; error?: string }>(authRes)
+  if (authRes.ok && authJson?.ok === true && Array.isArray(authJson.items) && authJson.items.length > 0) {
+    const items = authJson.items as Record<string, unknown>[]
+    const lines = mapItemsToCounterofferLines(items, maxDays)
+    const sponsorOffer = items.reduce((s, it) => s + (Number(it.current_price ?? 0) || 0), 0)
+    const internalTarget = items.reduce((s, it) => {
+      const p = Number(it.proposed_price ?? 0) || 0
+      const ic = Number(it.internal_cost ?? 0) || 0
+      return s + (p || ic)
+    }, 0)
+    return {
+      source: "live",
+      value: {
+        sponsorOffer: sponsorOffer || fallbackBase.sponsorOffer,
+        internalTarget: internalTarget || fallbackBase.internalTarget,
+        gap: (internalTarget || fallbackBase.internalTarget) - (sponsorOffer || fallbackBase.sponsorOffer),
+        lines: lines.sort((a, b) => b.daysPending - a.daysPending),
+      },
+    }
+  }
+
+  if (strict) {
+    return {
+      source: "error",
+      value: { ...fallbackBase, lines: [] },
+      error:
+        authJson?.error ??
+        (authRes.status === 401
+          ? "Sign in to load negotiation items"
+          : "No saved line items for this deal or API error"),
+    }
+  }
 
   const res = await fetch(`/api/demo/negotiation-items?deal_id=${encodeURIComponent(dealId)}`, { cache: "no-store" })
   const json = await safeJson<{ ok?: unknown; data?: unknown }>(res)
@@ -269,22 +412,8 @@ export async function getCounterofferData(args: { dealId?: string; studyKey: str
     }
   }
 
-  const items = json.data as any[]
-  const lines: CounterofferLine[] = items.map((it: any) => {
-    const fee = String(it.label ?? it.line_code ?? it.source_line_id ?? "Line")
-    const sponsor = Number(it.current_price ?? 0) || 0
-    const proposed = Number(it.proposed_price ?? 0) || Number(it.internal_cost ?? 0) || 0
-    const priority: CounterofferLine["priority"] = proposed - sponsor > 0 ? "must-win" : "tradeoff"
-    return {
-      fee,
-      sponsor,
-      proposed,
-      delta: proposed - sponsor,
-      priority,
-      justification: String(it.justification ?? "").trim() || "—",
-      daysPending: maxDays,
-    }
-  })
+  const items = json.data as Record<string, unknown>[]
+  const lines = mapItemsToCounterofferLines(items, maxDays)
 
   const sponsorOffer = items.reduce((s, it) => s + (Number(it.current_price ?? 0) || 0), 0)
   const internalTarget = items.reduce((s, it) => {

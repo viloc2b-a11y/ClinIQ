@@ -61,6 +61,11 @@ export function AnalyticsMvpPage() {
       ) : (
         <>
           <StudyHeader />
+          {snapshot.source === "error" ? (
+            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              {snapshot.note ?? "Could not load analytics."}
+            </p>
+          ) : null}
           {snapshot.source === "fallback" ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
               {snapshot.note ?? "Coordinated demo metrics — execution connection replaces with live totals."}

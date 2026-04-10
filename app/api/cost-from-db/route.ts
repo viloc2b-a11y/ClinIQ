@@ -1,4 +1,4 @@
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 import { createClient } from "@supabase/supabase-js"
 import { calculateProcedureCost } from "@/lib/cliniq-core/cost-truth/cost-engine"
@@ -45,43 +45,58 @@ export async function GET(request: Request) {
     }
 
     // 1. Procedure
-    const { data: procedureRow } = await supabase
+    const { data: procedureRow, error: procErr } = await supabase
       .from("procedures_master")
       .select("*")
       .eq("id", procedureId)
       .single()
+    if (procErr) {
+      return Response.json({ ok: false, error: procErr.message }, { status: 500 })
+    }
 
     // 2. Times
-    const { data: timesRows } = await supabase
+    const { data: timesRows, error: timesErr } = await supabase
       .from("procedure_time")
       .select("*")
       .eq("procedure_id", procedureId)
+    if (timesErr) {
+      return Response.json({ ok: false, error: timesErr.message }, { status: 500 })
+    }
 
     // 3. Conditions
-    const { data: conditionRows } = await supabase
+    const { data: conditionRows, error: condErr } = await supabase
       .from("procedure_conditions")
       .select("*")
       .eq("procedure_id", procedureId)
+    if (condErr) {
+      return Response.json({ ok: false, error: condErr.message }, { status: 500 })
+    }
 
     // 4. Role costs
-    const { data: roleCostRows } = await supabase
+    const { data: roleCostRows, error: roleErr } = await supabase
       .from("role_costs")
       .select("*")
       .eq("active", true)
+    if (roleErr) {
+      return Response.json({ ok: false, error: roleErr.message }, { status: 500 })
+    }
 
     // 5. Site profile
-    const { data: siteProfileRow } = await supabase
+    const { data: siteProfileRow, error: siteErr } = await supabase
       .from("site_cost_profiles")
       .select("*")
       .eq("id", siteProfileId)
       .single()
+    if (siteErr) {
+      return Response.json({ ok: false, error: siteErr.message }, { status: 500 })
+    }
 
     if (!procedureRow) {
-      throw new Error("Procedure not found")
+      return Response.json({ ok: false, error: "Procedure not found" }, { status: 404 })
     }
 
     if (!siteProfileRow) {
-      throw new Error("Site profile not found")
+      return Response.json({ ok: false, error: "Site profile not found" }, { status: 404 })
     }
 
     // Map to engine types
@@ -129,7 +144,7 @@ export async function GET(request: Request) {
 
     return Response.json(
       { ok: false, error: message },
-      { status: 400 }
+      { status: 500 }
     )
   }
 }

@@ -12,6 +12,7 @@ type AppTopNavProps = {
 }
 
 const PRIMARY = [
+  { href: "/portfolio", label: "Portfolio" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/billables", label: "Billables" },
   { href: "/leakage", label: "Leakage" },

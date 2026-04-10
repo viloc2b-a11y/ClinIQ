@@ -1,15 +1,17 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
 import { getDocumentsDemo } from "@/lib/mvp/backend"
 import { formatUsd } from "@/lib/mvp/format"
+import { cn } from "@/lib/utils"
 
 type DocStatus = "processing" | "ready" | "error"
 
@@ -90,9 +92,9 @@ export function DocumentsMvpPage() {
                 onChange={(e) => onFilesSelected(e.target.files)}
               />
             </label>
-            <Button variant="outline" disabled>
-              Approve & Generate Model
-            </Button>
+            <Link href="/import/demo" className={cn(buttonVariants({ variant: "outline" }))}>
+              Analyze &amp; start intake
+            </Link>
           </CardContent>
         </Card>
 
@@ -108,7 +110,6 @@ export function DocumentsMvpPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Confidence</TableHead>
-                  <TableHead>Days Pending</TableHead>
                   <TableHead>$ Impact</TableHead>
                 </TableRow>
               </TableHeader>
@@ -122,7 +123,6 @@ export function DocumentsMvpPage() {
                       <TableCell>{d.type}</TableCell>
                       <TableCell>{statusBadge(d.status)}</TableCell>
                       <TableCell>{Math.round(d.confidence * 100)}%</TableCell>
-                      <TableCell className="font-semibold">{d.daysPending}</TableCell>
                       <TableCell className="font-semibold">{formatUsd(d.impactUsd)}</TableCell>
                     </TableRow>
                   ))}
@@ -143,7 +143,6 @@ export function DocumentsMvpPage() {
                 <TableHead>Visit</TableHead>
                 <TableHead>Procedure</TableHead>
                 <TableHead>Rate</TableHead>
-                <TableHead>Days Pending</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -152,7 +151,6 @@ export function DocumentsMvpPage() {
                   <TableCell className="font-medium">{row.visit}</TableCell>
                   <TableCell>{row.procedure}</TableCell>
                   <TableCell>{formatUsd(row.rate)}</TableCell>
-                  <TableCell className="font-semibold">{row.days}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

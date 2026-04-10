@@ -50,8 +50,13 @@ export async function updateSession(request: NextRequest) {
   }
 
   const pathname = request.nextUrl.pathname;
+  const demoNoAuth = String(process.env.CLINIQ_DEMO_NO_AUTH ?? "").trim() === "1";
 
   if (pathname.startsWith("/import")) {
+    const isDemoImport = pathname === "/import/demo" || pathname.startsWith("/import/demo/");
+    if (demoNoAuth && isDemoImport) {
+      return response;
+    }
     if (!user) {
       const login = new URL("/auth/login", request.url);
       login.searchParams.set("next", `${pathname}${request.nextUrl.search}`);
@@ -64,6 +69,11 @@ export async function updateSession(request: NextRequest) {
       const nextParam = request.nextUrl.searchParams.get("next");
       const dest =
         nextParam && nextParam.startsWith("/") ? nextParam : "/import";
+      return NextResponse.redirect(new URL(dest, request.url));
+    }
+    if (demoNoAuth) {
+      const nextParam = request.nextUrl.searchParams.get("next");
+      const dest = nextParam && nextParam.startsWith("/") ? nextParam : "/import/demo";
       return NextResponse.redirect(new URL(dest, request.url));
     }
   }
