@@ -20,7 +20,7 @@ type AnalyticsRow = {
 }
 
 export function AnalyticsMvpPage() {
-  const { studyKey } = useDemoContext()
+  const { isDemoMode, studyKey, enterDemoMode } = useDemoContext()
   const [loading, setLoading] = useState(true)
   const [snapshot, setSnapshot] = useState<AnalyticsSnapshot>({
     kpis: { ready: 0, atRisk: 0, delayed: 0, critical: 0 },
@@ -38,7 +38,7 @@ export function AnalyticsMvpPage() {
     let cancelled = false
     async function load() {
       setLoading(true)
-      const s = await getAnalyticsSnapshot(studyKey)
+      const s = await getAnalyticsSnapshot(studyKey, { demoMode: isDemoMode })
       if (cancelled) return
       setSnapshot(s)
       setLoading(false)
@@ -61,6 +61,17 @@ export function AnalyticsMvpPage() {
       ) : (
         <>
           <StudyHeader />
+          {!studyKey.trim() && !isDemoMode ? (
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">No study selected.</p>
+              <p className="mt-1">Analytics is downstream — run a demo to preview, or start from Negotiations.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={enterDemoMode} className="rounded-md border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/30">
+                  Run demo
+                </button>
+              </div>
+            </div>
+          ) : null}
           {snapshot.source === "error" ? (
             <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {snapshot.note ?? "Could not load analytics."}

@@ -4,6 +4,7 @@ import { useDemoContext } from "@/components/demo/DemoContext"
 import { useEffect, useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { KpiCards } from "@/components/mvp/KpiCards"
@@ -12,6 +13,7 @@ import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
 import { formatUsd, statusFromDays } from "@/lib/mvp/format"
 import { getExecutionSummary, getLeakageRows } from "@/lib/mvp/backend"
+import { cn } from "@/lib/utils"
 
 type LeakageRow = {
   patient: string
@@ -23,7 +25,7 @@ type LeakageRow = {
 }
 
 export function LeakageMvpPage() {
-  const { studyKey } = useDemoContext()
+  const { isDemoMode, studyKey, enterDemoMode } = useDemoContext()
   const [loading, setLoading] = useState(true)
   const [kpis, setKpis] = useState<{ ready: number; atRisk: number; delayed: number; critical: number }>({
     ready: 0,
@@ -41,7 +43,10 @@ export function LeakageMvpPage() {
     let cancelled = false
     async function load() {
       setLoading(true)
-      const [summaryRes, leakageRes] = await Promise.all([getExecutionSummary(studyKey), getLeakageRows(studyKey)])
+      const [summaryRes, leakageRes] = await Promise.all([
+        getExecutionSummary(studyKey, { demoMode: isDemoMode }),
+        getLeakageRows(studyKey, { demoMode: isDemoMode }),
+      ])
       if (cancelled) return
       setKpis(summaryRes.value)
 
@@ -81,6 +86,17 @@ export function LeakageMvpPage() {
       ) : (
         <>
           <StudyHeader />
+          {!studyKey.trim() && !isDemoMode ? (
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">No study selected.</p>
+              <p className="mt-1">Leakage monitoring is downstream. Run a demo to preview, or start from Negotiations.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={enterDemoMode} className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
+                  Run demo
+                </button>
+              </div>
+            </div>
+          ) : null}
           {sourceError ? (
             <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">{sourceError}</p>
           ) : null}

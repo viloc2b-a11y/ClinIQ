@@ -12,6 +12,7 @@ import { StudyHeader } from "@/components/mvp/StudyHeader"
 import { formatUsd } from "@/lib/mvp/format"
 import { getCounterofferData, type CounterofferData, type DataSource } from "@/lib/mvp/backend"
 import { cn } from "@/lib/utils"
+import { buttonVariants } from "@/components/ui/button"
 
 function priorityBadge(priority: "must-win" | "tradeoff") {
   if (priority === "must-win") return <Badge variant="destructive">must-win</Badge>
@@ -19,7 +20,7 @@ function priorityBadge(priority: "must-win" | "tradeoff") {
 }
 
 export function CounterofferMvpPage() {
-  const { studyKey, dealId, setDealId, deals, dealsLoading } = useDemoContext()
+  const { isDemoMode, enterDemoMode, studyKey, dealId, setDealId, deals, dealsLoading } = useDemoContext()
   const [loading, setLoading] = useState(true)
   const [source, setSource] = useState<DataSource>("fallback")
   const [note, setNote] = useState<string | null>(null)
@@ -35,7 +36,7 @@ export function CounterofferMvpPage() {
     let cancelled = false
     async function load() {
       setLoading(true)
-      const res = await getCounterofferData({ dealId, studyKey })
+      const res = await getCounterofferData({ dealId, studyKey }, { demoMode: isDemoMode })
       if (cancelled) return
       setSource(res.source)
       setLoadError(res.source === "error" ? res.error ?? "Could not load negotiation data." : null)
@@ -56,7 +57,7 @@ export function CounterofferMvpPage() {
   return (
     <MvpShell
       title="Counteroffer"
-      subtitle="Negotiation opportunity — sponsor versus target economics by fee line, using the same study context as the rest of the demo."
+      subtitle="Counteroffer generation — line-by-line upside with sponsor-ready language."
     >
       {loading || dealsLoading ? (
         <MvpPageSkeleton />
@@ -80,6 +81,22 @@ export function CounterofferMvpPage() {
               )}
             </div>
           </div>
+
+          {!studyKey.trim() && !isDemoMode ? (
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">No study selected.</p>
+              <p className="mt-1">Start intake, or run a demo to preview a full counteroffer.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={enterDemoMode}
+                  className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
+                >
+                  Run demo
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           {loadError ? (
             <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">{loadError}</p>
@@ -113,7 +130,9 @@ export function CounterofferMvpPage() {
                 onChange={(e) => setDealId(e.target.value)}
               >
                 {deals.length === 0 ? (
-                  <option value="">Coordinated demo deal (no database deals)</option>
+                  <option value="">
+                    {isDemoMode ? "Demo deal (no database deals)" : "No open deals yet"}
+                  </option>
                 ) : (
                   deals.map((d) => (
                     <option key={d.deal_id} value={d.deal_id}>

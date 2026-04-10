@@ -23,6 +23,15 @@ export function isMvpStrict(): boolean {
   return process.env.NEXT_PUBLIC_CLINIQ_MVP_STRICT === "1"
 }
 
+export type MvpDataOptions = {
+  /** When true, demo endpoints + mock values are allowed. Default false. */
+  demoMode?: boolean
+}
+
+function isDemoMode(opts?: MvpDataOptions): boolean {
+  return opts?.demoMode === true
+}
+
 async function safeJson<T>(res: Response): Promise<T | null> {
   try {
     return (await res.json()) as T
@@ -60,14 +69,9 @@ function mockLeakageRows(): TopLeakageRow[] {
   }))
 }
 
-export async function getExecutionSummary(studyKey: string): Promise<MvpResult<MvpKpis>> {
-  const strict = isMvpStrict()
-  const fallback: MvpResult<MvpKpis> = { source: "fallback", value: MVP_MOCK.kpis, note: "Demo data" }
-  if (!studyKey.trim()) {
-    return strict
-      ? { source: "error", value: ZERO_KPIS, error: "Missing study key" }
-      : fallback
-  }
+export async function getExecutionSummary(studyKey: string, opts?: MvpDataOptions): Promise<MvpResult<MvpKpis>> {
+  const fallback: MvpResult<MvpKpis> = { source: "fallback", value: MVP_MOCK.kpis, note: "Demo scenario" }
+  if (!studyKey.trim()) return { source: "live", value: ZERO_KPIS, note: "No study selected yet." }
 
   const res = await fetchApiOk<{
     study_key: string | null
@@ -78,9 +82,9 @@ export async function getExecutionSummary(studyKey: string): Promise<MvpResult<M
   }>(`/api/execution/summary?study_key=${encodeURIComponent(studyKey)}`)
 
   if (!res.ok) {
-    return strict
-      ? { source: "error", value: ZERO_KPIS, error: res.error ?? "Execution summary unavailable" }
-      : fallback
+    return isDemoMode(opts)
+      ? fallback
+      : { source: "error", value: ZERO_KPIS, error: res.error ?? "Execution summary unavailable" }
   }
 
   const ready = Number(res.data.totals?.expected_revenue ?? 0)
@@ -97,22 +101,21 @@ export async function getExecutionSummary(studyKey: string): Promise<MvpResult<M
   }
 }
 
-export async function getLeakageRows(studyKey: string): Promise<MvpResult<TopLeakageRow[]>> {
-  const strict = isMvpStrict()
-  const fallback: MvpResult<TopLeakageRow[]> = { source: "fallback", value: mockLeakageRows(), note: "Demo data" }
-  if (!studyKey.trim()) {
-    return strict ? { source: "error", value: [], error: "Missing study key" } : fallback
-  }
+export async function getLeakageRows(studyKey: string, opts?: MvpDataOptions): Promise<MvpResult<TopLeakageRow[]>> {
+  const fallback: MvpResult<TopLeakageRow[]> = { source: "fallback", value: mockLeakageRows(), note: "Demo scenario" }
+  if (!studyKey.trim()) return { source: "live", value: [], note: "No study selected yet." }
 
   const res = await fetchApiOk<any[]>(`/api/execution/leakage?study_id=${encodeURIComponent(studyKey)}&limit=200`)
   if (!res.ok) {
-    return strict ? { source: "error", value: [], error: res.error ?? "Leakage API unavailable" } : fallback
+    return isDemoMode(opts)
+      ? fallback
+      : { source: "error", value: [], error: res.error ?? "Leakage API unavailable" }
   }
   if (!Array.isArray(res.data)) {
-    return strict ? { source: "error", value: [], error: "Invalid leakage response" } : fallback
+    return isDemoMode(opts) ? fallback : { source: "error", value: [], error: "Invalid leakage response" }
   }
   if (res.data.length === 0) {
-    return strict ? { source: "live", value: [] } : fallback
+    return isDemoMode(opts) ? fallback : { source: "live", value: [] }
   }
 
   const mapped: TopLeakageRow[] = res.data.map((r) => ({
@@ -134,11 +137,10 @@ export type BillablesRow = {
   daysPending: number
 }
 
-export async function getBillablesRows(studyKey: string): Promise<MvpResult<BillablesRow[]>> {
-  const strict = isMvpStrict()
+export async function getBillablesRows(studyKey: string, opts?: MvpDataOptions): Promise<MvpResult<BillablesRow[]>> {
   const fallback: MvpResult<BillablesRow[]> = {
     source: "fallback",
-    note: "Demo data",
+    note: "Demo scenario",
     value: MVP_MOCK.patients.map((p) => ({
       patient: p.id,
       visit: p.visit,
@@ -148,19 +150,19 @@ export async function getBillablesRows(studyKey: string): Promise<MvpResult<Bill
       daysPending: p.days,
     })),
   }
-  if (!studyKey.trim()) {
-    return strict ? { source: "error", value: [], error: "Missing study key" } : fallback
-  }
+  if (!studyKey.trim()) return { source: "live", value: [], note: "No study selected yet." }
 
   const res = await fetchApiOk<any[]>(`/api/execution/leakage?study_id=${encodeURIComponent(studyKey)}&limit=500`)
   if (!res.ok) {
-    return strict ? { source: "error", value: [], error: res.error ?? "Billables/leakage API unavailable" } : fallback
+    return isDemoMode(opts)
+      ? fallback
+      : { source: "error", value: [], error: res.error ?? "Billables/leakage API unavailable" }
   }
   if (!Array.isArray(res.data)) {
-    return strict ? { source: "error", value: [], error: "Invalid billables response" } : fallback
+    return isDemoMode(opts) ? fallback : { source: "error", value: [], error: "Invalid billables response" }
   }
   if (res.data.length === 0) {
-    return strict ? { source: "live", value: [] } : fallback
+    return isDemoMode(opts) ? fallback : { source: "live", value: [] }
   }
 
   const rows: BillablesRow[] = res.data.map((r) => ({
@@ -181,9 +183,9 @@ export type AnalyticsSnapshot = {
   note?: string
 }
 
-export async function getAnalyticsSnapshot(studyKey: string): Promise<AnalyticsSnapshot> {
-  const kpisRes = await getExecutionSummary(studyKey)
-  const leakageRes = await getLeakageRows(studyKey)
+export async function getAnalyticsSnapshot(studyKey: string, opts?: MvpDataOptions): Promise<AnalyticsSnapshot> {
+  const kpisRes = await getExecutionSummary(studyKey, opts)
+  const leakageRes = await getLeakageRows(studyKey, opts)
 
   const maxDays = Math.max(0, ...leakageRes.value.map((r) => r.daysPending))
   const criticalCount = leakageRes.value.filter((r) => r.daysPending > 30).length
@@ -209,17 +211,14 @@ export async function getAnalyticsSnapshot(studyKey: string): Promise<AnalyticsS
   let source: DataSource = "fallback"
   if (kpisRes.source === "error" || leakageRes.source === "error") source = "error"
   else if (kpisRes.source === "live" || leakageRes.source === "live") source = "live"
+  else source = "live"
 
   return {
     kpis: kpisRes.value,
     metrics,
     source,
     note:
-      source === "error"
-        ? kpisRes.error ?? leakageRes.error ?? "Data error"
-        : source === "fallback"
-          ? "Demo data"
-          : undefined,
+      source === "error" ? kpisRes.error ?? leakageRes.error ?? "Data error" : undefined,
   }
 }
 
@@ -247,12 +246,9 @@ export type NegotiationDealOption = {
   label: string
 }
 
-export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpResult<NegotiationDealOption[]>> {
-  const strict = isMvpStrict()
-  const empty: MvpResult<NegotiationDealOption[]> = { source: "fallback", value: [] }
-  if (!studyKey.trim()) {
-    return strict ? { source: "error", value: [], error: "Missing study key" } : empty
-  }
+export async function getNegotiationDealsForDemo(studyKey: string, opts?: MvpDataOptions): Promise<MvpResult<NegotiationDealOption[]>> {
+  const empty: MvpResult<NegotiationDealOption[]> = { source: "live", value: [] }
+  if (!studyKey.trim()) return { ...empty, note: "Select a study to load deals." }
 
   const authRes = await fetch(`/api/negotiation/deals?studyKey=${encodeURIComponent(studyKey)}`, {
     cache: "no-store",
@@ -270,21 +266,19 @@ export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpR
     if (mapped.length > 0) {
       return { source: "live", value: mapped }
     }
-    if (strict) {
-      return { source: "live", value: [], note: "No open deals for this study" }
-    }
-  } else if (strict) {
-    return {
-      source: "error",
-      value: [],
-      error: authJson?.error ?? (authRes.status === 401 ? "Sign in to load negotiation deals" : "Deals list unavailable"),
-    }
+    return { source: "live", value: [], note: "No open deals for this study." }
+  }
+
+  if (!isDemoMode(opts)) {
+    // No demo fallback by default.
+    if (authRes.status === 401) return { source: "live", value: [], note: "Sign in to load negotiation deals." }
+    return { source: "error", value: [], error: authJson?.error ?? "Deals list unavailable" }
   }
 
   const res = await fetch(`/api/demo/negotiation-deals?study_key=${encodeURIComponent(studyKey)}`, { cache: "no-store" })
   const json = await safeJson<{ ok?: unknown; data?: unknown }>(res)
   if (!res.ok || !json || json.ok !== true || !Array.isArray(json.data)) {
-    return { ...empty, note: "Deals list unavailable" }
+    return { source: "error", value: [], error: "Demo deals unavailable" }
   }
 
   const mappedDemo: NegotiationDealOption[] = (json.data as Record<string, unknown>[]).map((d) => {
@@ -295,9 +289,7 @@ export async function getNegotiationDealsForDemo(studyKey: string): Promise<MvpR
     return { deal_id, study_key: sk, label }
   })
 
-  return mappedDemo.length
-    ? { source: "live", value: mappedDemo }
-    : { source: "fallback", value: [], note: "No open deals for this study" }
+  return mappedDemo.length ? { source: "fallback", value: mappedDemo, note: "Demo scenario" } : { source: "live", value: [] }
 }
 
 function counterofferFallbackLines(): CounterofferLine[] {
@@ -336,8 +328,10 @@ function mapItemsToCounterofferLines(items: Record<string, unknown>[], maxDays: 
   })
 }
 
-export async function getCounterofferData(args: { dealId?: string; studyKey: string }): Promise<MvpResult<CounterofferData>> {
-  const strict = isMvpStrict()
+export async function getCounterofferData(
+  args: { dealId?: string; studyKey: string },
+  opts?: MvpDataOptions,
+): Promise<MvpResult<CounterofferData>> {
   const fallbackBase: CounterofferData = {
     sponsorOffer: 180_000,
     internalTarget: 240_000,
@@ -345,21 +339,13 @@ export async function getCounterofferData(args: { dealId?: string; studyKey: str
     lines: counterofferFallbackLines(),
   }
 
-  const leakageRes = await getLeakageRows(args.studyKey)
+  const leakageRes = await getLeakageRows(args.studyKey, opts)
   const maxDays = Math.max(0, ...leakageRes.value.map((r) => r.daysPending))
 
   const dealId = (args.dealId ?? "").trim()
 
-  const fallbackNoDeal: MvpResult<CounterofferData> = {
-    source: "fallback",
-    note: "Coordinated demo negotiation scenario",
-    value: { ...fallbackBase, lines: counterofferFallbackLines().map((l) => ({ ...l, daysPending: maxDays || l.daysPending })) },
-  }
-
   if (!dealId) {
-    return strict
-      ? { source: "error", value: { ...fallbackBase, lines: [] }, error: "Select a deal to load negotiation lines" }
-      : fallbackNoDeal
+    return { source: "live", value: { ...fallbackBase, lines: [] }, note: "Select a deal to load negotiation lines." }
   }
 
   const authRes = await fetch(`/api/negotiation/items?dealId=${encodeURIComponent(dealId)}`, {
@@ -387,49 +373,35 @@ export async function getCounterofferData(args: { dealId?: string; studyKey: str
     }
   }
 
-  if (strict) {
-    return {
-      source: "error",
-      value: { ...fallbackBase, lines: [] },
-      error:
-        authJson?.error ??
-        (authRes.status === 401
-          ? "Sign in to load negotiation items"
-          : "No saved line items for this deal or API error"),
+  if (isDemoMode(opts)) {
+    const res = await fetch(`/api/demo/negotiation-items?deal_id=${encodeURIComponent(dealId)}`, { cache: "no-store" })
+    const json = await safeJson<{ ok?: unknown; data?: unknown }>(res)
+    if (res.ok && json?.ok === true && Array.isArray(json.data) && json.data.length > 0) {
+      const items = json.data as Record<string, unknown>[]
+      const lines = mapItemsToCounterofferLines(items, maxDays)
+      const sponsorOffer = items.reduce((s, it) => s + (Number(it.current_price ?? 0) || 0), 0)
+      const internalTarget = items.reduce((s, it) => {
+        const p = Number(it.proposed_price ?? 0) || 0
+        const ic = Number(it.internal_cost ?? 0) || 0
+        return s + (p || ic)
+      }, 0)
+      return {
+        source: "fallback",
+        note: "Demo scenario",
+        value: {
+          sponsorOffer: sponsorOffer || fallbackBase.sponsorOffer,
+          internalTarget: internalTarget || fallbackBase.internalTarget,
+          gap: (internalTarget || fallbackBase.internalTarget) - (sponsorOffer || fallbackBase.sponsorOffer),
+          lines: lines.sort((a, b) => b.daysPending - a.daysPending),
+        },
+      }
     }
   }
-
-  const res = await fetch(`/api/demo/negotiation-items?deal_id=${encodeURIComponent(dealId)}`, { cache: "no-store" })
-  const json = await safeJson<{ ok?: unknown; data?: unknown }>(res)
-  if (!res.ok || !json || json.ok !== true || !Array.isArray(json.data) || json.data.length === 0) {
-    return {
-      source: "fallback",
-      note: "Demo negotiation lines — this deal has no saved line items yet",
-      value: {
-        ...fallbackBase,
-        lines: counterofferFallbackLines().map((l) => ({ ...l, daysPending: maxDays || l.daysPending })),
-      },
-    }
-  }
-
-  const items = json.data as Record<string, unknown>[]
-  const lines = mapItemsToCounterofferLines(items, maxDays)
-
-  const sponsorOffer = items.reduce((s, it) => s + (Number(it.current_price ?? 0) || 0), 0)
-  const internalTarget = items.reduce((s, it) => {
-    const p = Number(it.proposed_price ?? 0) || 0
-    const ic = Number(it.internal_cost ?? 0) || 0
-    return s + (p || ic)
-  }, 0)
 
   return {
-    source: "live",
-    value: {
-      sponsorOffer: sponsorOffer || fallbackBase.sponsorOffer,
-      internalTarget: internalTarget || fallbackBase.internalTarget,
-      gap: (internalTarget || fallbackBase.internalTarget) - (sponsorOffer || fallbackBase.sponsorOffer),
-      lines: lines.sort((a, b) => b.daysPending - a.daysPending),
-    },
+    source: "error",
+    value: { ...fallbackBase, lines: [] },
+    error: authJson?.error ?? (authRes.status === 401 ? "Sign in to load negotiation items." : "No saved line items for this deal yet."),
   }
 }
 

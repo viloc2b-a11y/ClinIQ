@@ -42,9 +42,9 @@ type DashboardPayload = {
 
 function phaseBadge(phase: Phase) {
   if (phase === "closeout") return <Badge variant="outline">Closeout</Badge>
-  if (phase === "active") return <Badge variant="secondary">Active</Badge>
-  if (phase === "negotiating") return <Badge variant="outline">Negotiating</Badge>
-  return <Badge variant="outline">Draft</Badge>
+  if (phase === "active") return <Badge variant="secondary">Agreed</Badge>
+  if (phase === "negotiating") return <Badge variant="outline">In negotiation</Badge>
+  return <Badge variant="outline">Intake</Badge>
 }
 
 export function DashboardCommandCenterPage() {
@@ -90,8 +90,8 @@ export function DashboardCommandCenterPage() {
 
   return (
     <MvpShell
-      title="Financial Control Across All Active Studies"
-      subtitle="Negotiate better. Track expected vs actual. Close without leaving revenue behind."
+      title="Negotiation Hub"
+      subtitle="Win more in every sponsor negotiation — see what’s waiting on you and make the next move."
     >
       {err ? (
         <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
@@ -99,21 +99,58 @@ export function DashboardCommandCenterPage() {
         </p>
       ) : null}
 
+      {/* Immediate actions */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Card className="border-border/80 bg-muted/15 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Start intake</CardTitle>
+            <p className="text-xs text-muted-foreground">Upload a sponsor offer and generate negotiation lines.</p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Link href="/import" className={cn(buttonVariants({ variant: "default", size: "sm" }), "whitespace-nowrap")}>
+              Intake sponsor offer
+            </Link>
+          </CardContent>
+        </Card>
+        <Card className="border-border/80 bg-muted/15 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Build your counter</CardTitle>
+            <p className="text-xs text-muted-foreground">Turn line-level gaps into sponsor-ready language.</p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Link href="/counteroffer" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "whitespace-nowrap")}>
+              Open counteroffer
+            </Link>
+          </CardContent>
+        </Card>
+        <Card className="border-border/80 bg-muted/15 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Track studies</CardTitle>
+            <p className="text-xs text-muted-foreground">See what’s in negotiation vs downstream execution.</p>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <Link href="/portfolio" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "whitespace-nowrap")}>
+              View studies
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* KPI row */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Active Studies</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Studies in negotiation</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold tracking-tight tabular-nums">
-              {loading ? "—" : String(kpis?.active_studies ?? 0)}
+              {loading ? "—" : String(phaseDist.negotiating ?? 0)}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Negotiation Upside</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Total upside available</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold tracking-tight tabular-nums">
@@ -123,99 +160,138 @@ export function DashboardCommandCenterPage() {
         </Card>
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Expected Revenue</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Avg sponsor gap %</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold tracking-tight tabular-nums">
-              {loading ? "—" : formatUsd(kpis?.expected_revenue ?? 0)}
+              {loading
+                ? "—"
+                : (() => {
+                    // Derived proxy: upside vs portfolio expected (only when available)
+                    const denom = Math.max(1, revenueFunnel.expected || 0)
+                    const gap = Math.max(0, kpis?.negotiation_upside ?? 0)
+                    const pct = Math.min(99, Math.round((gap / denom) * 100))
+                    return `${pct}%`
+                  })()}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Revenue at Risk</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Deals awaiting counter</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold tracking-tight tabular-nums text-destructive">
-              {loading ? "—" : formatUsd(kpis?.revenue_at_risk ?? 0)}
+            <div className="text-2xl font-semibold tracking-tight tabular-nums">
+              {loading ? "—" : String((data?.needs_attention ?? []).length)}
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-xs font-medium text-muted-foreground">Closeout Exposure</CardTitle>
+            <CardTitle className="text-xs font-medium text-muted-foreground">Agreements closed</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold tracking-tight tabular-nums">
-              {loading ? "—" : formatUsd(kpis?.closeout_exposure ?? 0)}
+              {loading ? "—" : String(phaseDist.active ?? 0)}
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Portfolio table */}
+      {/* Negotiation pipeline */}
       <Card>
         <CardHeader className="pb-0">
-          <CardTitle>Portfolio</CardTitle>
+          <CardTitle>Negotiation pipeline</CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">Active studies, upside, and your next move.</p>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Loading portfolio…</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">Loading pipeline…</p>
           ) : rows.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">No studies found for this site yet.</p>
+            <div className="py-8 text-center text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">No active negotiations yet.</p>
+              <p className="mt-1">Start by uploading a sponsor offer.</p>
+              <div className="mt-4 flex justify-center gap-2">
+                <Link href="/import" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
+                  Intake sponsor offer
+                </Link>
+                <Link href="/negotiation" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                  Open negotiation workspace
+                </Link>
+              </div>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Study</TableHead>
-                    <TableHead>Sponsor / CRO</TableHead>
+                    <TableHead>Sponsor</TableHead>
                     <TableHead>Phase</TableHead>
-                    <TableHead className="text-right">Negotiation</TableHead>
-                    <TableHead className="text-right">Expected</TableHead>
-                    <TableHead className="text-right">Billed</TableHead>
-                    <TableHead className="text-right">Collected</TableHead>
-                    <TableHead className="text-right">At Risk</TableHead>
-                    <TableHead>Next Action</TableHead>
+                    <TableHead className="text-right">Sponsor offer</TableHead>
+                    <TableHead className="text-right">Your target</TableHead>
+                    <TableHead className="text-right">Upside</TableHead>
+                    <TableHead>Next action</TableHead>
                     <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {rows.map((r) => (
-                    <TableRow key={r.study_key}>
-                      <TableCell className="whitespace-nowrap font-medium">{r.study_key}</TableCell>
-                      <TableCell className="min-w-[200px] text-sm text-muted-foreground">
-                        {(r.sponsor_name || r.cro_name)
-                          ? [r.sponsor_name, r.cro_name].filter(Boolean).join(" · ")
-                          : "—"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">{phaseBadge(r.phase)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
-                        {r.phase === "negotiating" && r.upside > 0 ? `+${formatUsd(r.upside)}` : "—"}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
-                        {formatUsd(r.expected_revenue)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
-                        {formatUsd(r.billed_revenue)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
-                        {formatUsd(r.collected_revenue)}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums text-destructive">
-                        {formatUsd(r.at_risk_revenue)}
-                      </TableCell>
-                      <TableCell className="min-w-[220px] text-muted-foreground">{r.next_action}</TableCell>
-                      <TableCell className="text-right">
-                        <Link
-                          href={`/dashboard?study_key=${encodeURIComponent(r.study_key)}`}
-                          className={cn(buttonVariants({ variant: "outline", size: "sm" }), "whitespace-nowrap")}
-                        >
-                          Open
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {rows.map((r) => {
+                    const sponsorOffer = Math.max(0, r.expected_revenue - (r.upside ?? 0))
+                    const target = Math.max(0, r.expected_revenue)
+                    const upside = Math.max(0, r.upside ?? 0)
+                    const phaseLabel =
+                      r.phase === "draft"
+                        ? "intake"
+                        : r.phase === "negotiating"
+                          ? "analyzing"
+                          : r.phase === "active"
+                            ? "agreed"
+                            : "closeout"
+                    return (
+                      <TableRow key={r.study_key}>
+                        <TableCell className="whitespace-nowrap font-medium">{r.study_key}</TableCell>
+                        <TableCell className="min-w-[180px] text-sm text-muted-foreground">{r.sponsor_name || "—"}</TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          <Badge variant="outline" className="capitalize">
+                            {phaseLabel}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                          {r.phase === "negotiating" ? formatUsd(sponsorOffer) : "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                          {r.phase === "negotiating" ? formatUsd(target) : "—"}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
+                          {r.phase === "negotiating" && upside > 0 ? `+${formatUsd(upside)}` : "—"}
+                        </TableCell>
+                        <TableCell className="min-w-[190px]">
+                          {r.phase === "negotiating" ? (
+                            <Link href="/counteroffer" className={cn(buttonVariants({ variant: "default", size: "sm" }))}>
+                              Build counter
+                            </Link>
+                          ) : r.phase === "draft" ? (
+                            <Link href="/import" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                              Start intake
+                            </Link>
+                          ) : (
+                            <Link href="/billables" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                              View execution
+                            </Link>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Link
+                            href={`/dashboard?study_key=${encodeURIComponent(r.study_key)}`}
+                            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "whitespace-nowrap")}
+                          >
+                            Open
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -223,10 +299,11 @@ export function DashboardCommandCenterPage() {
         </CardContent>
       </Card>
 
-      {/* Needs attention */}
+      {/* Immediate attention */}
       <Card>
         <CardHeader className="pb-0">
-          <CardTitle>Needs Attention Today</CardTitle>
+          <CardTitle>Next moves</CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">High priority items you can act on now.</p>
         </CardHeader>
         <CardContent className="space-y-2">
           {loading ? (
@@ -242,16 +319,18 @@ export function DashboardCommandCenterPage() {
                   <span className="text-muted-foreground">
                     {r.phase === "negotiating"
                       ? `${formatUsd(r.upside)} upside`
-                      : r.phase === "closeout"
-                        ? `${formatUsd(r.closeout_exposure)} closeout exposure`
-                        : `${formatUsd(r.at_risk_revenue)} at risk`}
+                      : r.phase === "draft"
+                        ? "Intake ready"
+                        : r.phase === "active"
+                          ? "Ready to publish + execute"
+                          : "Downstream closeout"}
                   </span>
                 </div>
                 <Link
-                  href={`/dashboard?study_key=${encodeURIComponent(r.study_key)}`}
+                  href={r.phase === "negotiating" ? "/counteroffer" : r.phase === "draft" ? "/import" : "/billables"}
                   className={cn(buttonVariants({ variant: "outline", size: "sm" }), "whitespace-nowrap")}
                 >
-                  Open
+                  {r.phase === "negotiating" ? "Build counter" : r.phase === "draft" ? "Start intake" : "View execution"}
                 </Link>
               </div>
             ))
@@ -259,11 +338,11 @@ export function DashboardCommandCenterPage() {
         </CardContent>
       </Card>
 
-      {/* Phase distribution + Revenue performance */}
+      {/* Secondary / downstream */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-0">
-            <CardTitle className="text-base">Phase Distribution</CardTitle>
+            <CardTitle className="text-base">Deal stages</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2">
@@ -285,9 +364,12 @@ export function DashboardCommandCenterPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-border/70 bg-muted/10 shadow-none">
           <CardHeader className="pb-0">
-            <CardTitle className="text-base">Revenue Performance</CardTitle>
+            <CardTitle className="text-base">Execution snapshot (downstream)</CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">
+              These are execution totals after a deal is agreed and published.
+            </p>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3 text-sm">
             <div className="rounded-md border border-border/60 bg-muted/20 px-3 py-2">

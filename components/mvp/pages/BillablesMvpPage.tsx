@@ -12,11 +12,13 @@ import { MvpShell } from "@/components/mvp/MvpShell"
 import { StudyHeader } from "@/components/mvp/StudyHeader"
 import { formatUsd, statusFromDays } from "@/lib/mvp/format"
 import { getBillablesRows, type BillablesRow, type DataSource } from "@/lib/mvp/backend"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 type Filter = "all" | "delayed" | "critical"
 
 export function BillablesMvpPage() {
-  const { studyKey } = useDemoContext()
+  const { isDemoMode, studyKey, enterDemoMode } = useDemoContext()
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>("all")
   const [source, setSource] = useState<DataSource>("fallback")
@@ -29,7 +31,7 @@ export function BillablesMvpPage() {
     let cancelled = false
     async function load() {
       setLoading(true)
-      const res = await getBillablesRows(studyKey)
+      const res = await getBillablesRows(studyKey, { demoMode: isDemoMode })
       if (cancelled) return
       setSource(res.source)
       setSourceError(res.source === "error" ? res.error ?? "Could not load billables." : null)
@@ -62,12 +64,23 @@ export function BillablesMvpPage() {
       ) : (
         <>
           <StudyHeader />
+          {!studyKey.trim() && !isDemoMode ? (
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">No study selected.</p>
+              <p className="mt-1">Execution is downstream. Start from Negotiations, or run a demo to preview billables.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={enterDemoMode} className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}>
+                  Run demo
+                </button>
+              </div>
+            </div>
+          ) : null}
           {sourceError ? (
             <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">{sourceError}</p>
           ) : null}
           {source === "fallback" ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-              Showing coordinated demo pending billables — live rows mirror execution leakage when connected.
+              Demo scenario — billables are simulated for walkthrough.
             </p>
           ) : null}
 

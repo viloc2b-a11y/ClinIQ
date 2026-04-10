@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { Sparkles } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useMaybeDemoContext } from "@/components/demo/DemoContext"
 
 type AppTopNavProps = {
   /** Subtitle under the product name (e.g. marketing tour vs app shell). */
@@ -12,27 +13,28 @@ type AppTopNavProps = {
 }
 
 const PRIMARY = [
-  { href: "/portfolio", label: "Portfolio" },
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/billables", label: "Billables" },
-  { href: "/leakage", label: "Leakage" },
-  { href: "/counteroffer", label: "Counteroffer" },
+  { href: "/dashboard", label: "Negotiations" },
+  { href: "/portfolio", label: "Studies" },
   { href: "/analytics", label: "Analytics" },
 ] as const
 
 const SECONDARY = [
-  { href: "/", label: "Home" },
+  { href: "/negotiation", label: "Negotiation workspace" },
   { href: "/documents", label: "Documents" },
-  { href: "/study-build", label: "Study Build" },
-  { href: "/tasks", label: "Tasks" },
+  { href: "/import", label: "Intake" },
+  { href: "/counteroffer", label: "Counteroffer" },
   { href: "/admin", label: "Admin" },
 ] as const
 
 /**
  * Sticky top bar aligned with the marketing home (ClinIQPresentation) for interior pages.
  */
-export function AppTopNav({ tagline = "Clinical finance & revenue" }: AppTopNavProps) {
+export function AppTopNav({ tagline = "Win more in sponsor negotiations" }: AppTopNavProps) {
   const pathname = usePathname()
+  const demo = useMaybeDemoContext()
+  const isDemoMode = demo?.isDemoMode === true
+  const enterDemoMode = demo?.enterDemoMode
+  const exitDemoMode = demo?.exitDemoMode
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/80 bg-background/80 backdrop-blur-md">
@@ -66,12 +68,57 @@ export function AppTopNav({ tagline = "Clinical finance & revenue" }: AppTopNavP
                 </Link>
               )
             })}
+
+            <details className="relative">
+              <summary className={cn(buttonVariants({ variant: pathname === "/billables" || pathname === "/leakage" ? "default" : "outline", size: "sm" }), "cursor-pointer list-none whitespace-nowrap")}>
+                Execution
+              </summary>
+              <div className="absolute right-0 mt-2 w-44 rounded-md border border-border bg-background p-1 shadow-lg">
+                <Link
+                  href="/billables"
+                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-full justify-start")}
+                >
+                  Billables
+                </Link>
+                <Link
+                  href="/leakage"
+                  className={cn(buttonVariants({ variant: "ghost", size: "sm" }), "w-full justify-start")}
+                >
+                  Leakage
+                </Link>
+              </div>
+            </details>
           </nav>
           <nav
             className="flex max-w-full flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs text-muted-foreground"
             aria-label="Beta and admin links"
           >
-            <span className="font-medium text-foreground/60">Beta</span>
+            {demo ? (
+              isDemoMode ? (
+                <button
+                  type="button"
+                  onClick={exitDemoMode}
+                  className="font-medium text-foreground/70 underline-offset-4 hover:underline"
+                >
+                  Exit demo
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={enterDemoMode}
+                  className="font-medium text-foreground/70 underline-offset-4 hover:underline"
+                >
+                  Run demo
+                </button>
+              )
+            ) : (
+              <Link
+                href="/dashboard?demo=true"
+                className="font-medium text-foreground/70 underline-offset-4 hover:underline"
+              >
+                Run demo
+              </Link>
+            )}
             {SECONDARY.map(({ href, label }) => (
               <Link key={href} href={href} className="underline-offset-4 hover:text-foreground hover:underline">
                 {label}

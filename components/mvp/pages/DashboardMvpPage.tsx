@@ -15,7 +15,7 @@ import { TopLeakageTable, type TopLeakageRow } from "@/components/mvp/TopLeakage
 import { getExecutionSummary, getLeakageRows } from "@/lib/mvp/backend"
 
 export function DashboardMvpPage() {
-  const { studyKey } = useDemoContext()
+  const { isDemoMode, studyKey, enterDemoMode } = useDemoContext()
   const [loading, setLoading] = useState(true)
   const [kpis, setKpis] = useState<{ ready: number; atRisk: number; delayed: number; critical: number }>({
     ready: 0,
@@ -32,7 +32,10 @@ export function DashboardMvpPage() {
 
     async function load() {
       setLoading(true)
-      const [summaryRes, leakageRes] = await Promise.all([getExecutionSummary(studyKey), getLeakageRows(studyKey)])
+      const [summaryRes, leakageRes] = await Promise.all([
+        getExecutionSummary(studyKey, { demoMode: isDemoMode }),
+        getLeakageRows(studyKey, { demoMode: isDemoMode }),
+      ])
       if (cancelled) return
 
       setKpis(summaryRes.value)
@@ -60,8 +63,8 @@ export function DashboardMvpPage() {
 
   return (
     <MvpShell
-      title="Dashboard"
-      subtitle="Revenue readiness, leakage hotspots, and recovery potential for the active study — one continuous story across the demo."
+      title="Execution dashboard"
+      subtitle="Downstream execution tracking after agreement close — billables and leakage for the active study."
     >
       {loading ? (
         <MvpPageSkeleton />
@@ -73,7 +76,24 @@ export function DashboardMvpPage() {
               {sourceError}
             </p>
           ) : null}
-          {sourceNote ? (
+          {!studyKey.trim() && !isDemoMode ? (
+            <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-3 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">No study selected.</p>
+              <p className="mt-1">Start from Negotiations, or run a demo scenario to preview execution.</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link href="/dashboard" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+                  Go to Negotiation Hub
+                </Link>
+                <button
+                  type="button"
+                  onClick={enterDemoMode}
+                  className={cn(buttonVariants({ variant: "secondary", size: "sm" }))}
+                >
+                  Run demo
+                </button>
+              </div>
+            </div>
+          ) : sourceNote ? (
             <p className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
               {sourceNote}
             </p>

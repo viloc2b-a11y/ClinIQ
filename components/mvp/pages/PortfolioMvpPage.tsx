@@ -69,8 +69,8 @@ export function PortfolioMvpPage() {
 
   return (
     <MvpShell
-      title="Portfolio"
-      subtitle="Across active studies: negotiation upside, missing revenue, and the next action to protect site economics."
+      title="Studies"
+      subtitle="Your study pipeline — intake to negotiation to downstream execution."
     >
       <StudyHeader timeWindow="Current view" />
 
@@ -116,7 +116,15 @@ export function PortfolioMvpPage() {
                   {rows.map((r) => (
                     <TableRow key={r.study_key}>
                       <TableCell className="whitespace-nowrap font-medium">{r.study_key}</TableCell>
-                      <TableCell className="whitespace-nowrap capitalize">{r.phase}</TableCell>
+                      <TableCell className="whitespace-nowrap capitalize">
+                        {r.phase === "draft"
+                          ? "intake"
+                          : r.phase === "negotiating"
+                            ? "in negotiation"
+                            : r.phase === "active"
+                              ? "agreed"
+                              : "closeout"}
+                      </TableCell>
                       <TableCell className="whitespace-nowrap text-right font-semibold tabular-nums">
                         {r.upside != null ? formatUsd(r.upside) : "—"}
                       </TableCell>
@@ -126,10 +134,10 @@ export function PortfolioMvpPage() {
                       <TableCell className="min-w-[220px] text-muted-foreground">{r.next_action}</TableCell>
                       <TableCell className="text-right">
                         <Link
-                          href={`/dashboard?study_key=${encodeURIComponent(r.study_key)}`}
+                          href={r.phase === "negotiating" ? "/counteroffer" : r.phase === "draft" ? "/import" : `/dashboard?study_key=${encodeURIComponent(r.study_key)}`}
                           className={cn(buttonVariants({ variant: "outline", size: "sm" }), "whitespace-nowrap")}
                         >
-                          Open
+                          {r.phase === "negotiating" ? "Build counter" : r.phase === "draft" ? "Start intake" : "Open"}
                         </Link>
                       </TableCell>
                     </TableRow>
